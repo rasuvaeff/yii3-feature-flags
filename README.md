@@ -11,8 +11,8 @@
 
 Feature flags, kill switches and percentage rollout for Yii3 applications.
 
-Stateless core without DB/Redis dependencies. Deterministic rollout via SHA-256
-hash. Works with Yii3 config-plugin or standalone.
+Stateless core — storage backends are separate packages. Deterministic rollout via
+SHA-256 hash. Works with Yii3 config-plugin or standalone.
 
 > Using an AI coding assistant? [llms.txt](llms.txt) has a compact API reference
 > you can give to the LLM to help it work with this package.
@@ -158,6 +158,13 @@ Deterministic assignment using `sha256(salt . ':' . subjectId)`:
 | `FlagEvaluator` | Core evaluation logic |
 | `PercentageRollout` | Deterministic percentage assignment |
 | `EvaluationResult` | Detailed evaluation outcome |
+
+## Storage backends
+
+| Package | Description |
+|---|---|
+| [`rasuvaeff/yii3-feature-flags-db`](https://github.com/rasuvaeff/yii3-feature-flags-db) | Database (yiisoft/db) with PSR-16 caching and migration |
+| [`rasuvaeff/yii3-feature-flags-redis`](https://github.com/rasuvaeff/yii3-feature-flags-redis) | Redis HASH via Predis, read-only |
 
 ## Security
 

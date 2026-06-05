@@ -8,7 +8,7 @@ composer require rasuvaeff/yii3-feature-flags
 
 ## Rules
 
-- Stateless core. No DB/Redis dependency.
+- Stateless core. Storage backends are separate packages.
 - Deterministic rollout: `sha256(salt . ':' . subjectId)`, first 8 hex chars → bucket % 100.
 - Kill switch overrides all rules, including forced values.
 - Forced values are context-scoped, apply only to existing flags, and do not override a kill switch.
@@ -136,6 +136,13 @@ $result->isEnvironmentExcluded(); // bool
 
 - `InvalidFlagNameException` extends `InvalidArgumentException` — invalid flag name format or rollout range.
 - `UnknownFlagException` extends `InvalidArgumentException` — flag not found in strict mode.
+
+### Storage backends
+
+| Package | Description |
+|---|---|
+| `rasuvaeff/yii3-feature-flags-db` | Database (yiisoft/db) + PSR-16 caching + migration |
+| `rasuvaeff/yii3-feature-flags-redis` | Redis HASH via Predis, read-only |
 
 ### Yii3 Integration
 

@@ -5,12 +5,15 @@ Guidance for AI agents working on this package. Read before changing code.
 ## What this is
 
 Feature flags, kill switches and percentage rollout for Yii3 applications.
-Stateless core without DB/Redis dependencies. Deterministic rollout via SHA-256
+Stateless core — storage backends are separate packages. Deterministic rollout via SHA-256
 hash. Namespace: `Rasuvaeff\Yii3FeatureFlags`.
 
 Public API: `FeatureFlags` (facade), `Flag`, `FlagContext`, `FlagProvider`,
 `ConfigFlagProvider`, `FlagRegistry`, `FlagEvaluator`, `PercentageRollout`,
 `EvaluationResult`.
+
+Storage backends: `rasuvaeff/yii3-feature-flags-db` (database + caching),
+`rasuvaeff/yii3-feature-flags-redis` (Redis HASH via Predis).
 
 ## Golden rules
 
