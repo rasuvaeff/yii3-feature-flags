@@ -1,0 +1,177 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Rasuvaeff\Yii3FeatureFlags\Tests;
+
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use Rasuvaeff\Yii3FeatureFlags\PercentageRollout;
+
+#[CoversClass(PercentageRollout::class)]
+final class PercentageRolloutTest extends TestCase
+{
+    private PercentageRollout $rollout;
+
+    #[\Override]
+    protected function setUp(): void
+    {
+        $this->rollout = new PercentageRollout();
+    }
+
+    #[Test]
+    public function zeroRolloutAlwaysDisabled(): void
+    {
+        $this->assertFalse(
+            $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: 0),
+        );
+    }
+
+    #[Test]
+    public function hundredRolloutAlwaysEnabled(): void
+    {
+        $this->assertTrue(
+            $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: 100),
+        );
+    }
+
+    #[Test]
+    public function sameSubjectGetsSameResult(): void
+    {
+        $result1 = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-42', rolloutPercentage: 50);
+        $result2 = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-42', rolloutPercentage: 50);
+
+        $this->assertSame($result1, $result2);
+    }
+
+    #[Test]
+    public function hashIsDeterministicWithKnownValues(): void
+    {
+        $enabled = $this->rollout->isEnabled(salt: 'test-salt', subjectId: 'user-1', rolloutPercentage: 50);
+
+        $digest = hash(algo: 'sha256', data: 'test-salt:user-1');
+        $bucket = hexdec(hex_string: substr(string: $digest, offset: 0, length: 8)) % 100;
+        $expected = $bucket < 50;
+
+        $this->assertSame($expected, $enabled);
+    }
+
+    #[Test]
+    public function hashUsesColonSeparator(): void
+    {
+        $withColon = $this->rollout->isEnabled(salt: 'a', subjectId: 'b', rolloutPercentage: 50);
+        $withoutColon = $this->rollout->isEnabled(salt: 'ab', subjectId: '', rolloutPercentage: 50);
+
+        $this->assertNotSame($withColon, $withoutColon);
+    }
+
+    #[Test]
+    public function hashUsesFirst8HexChars(): void
+    {
+        $digest = hash(algo: 'sha256', data: 'test:user-1');
+        $bucket8 = hexdec(hex_string: substr(string: $digest, offset: 0, length: 8)) % 100;
+        $bucket7 = hexdec(hex_string: substr(string: $digest, offset: 0, length: 7)) % 100;
+        $bucket9 = hexdec(hex_string: substr(string: $digest, offset: 0, length: 9)) % 100;
+
+        $result = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: 50);
+        $expected = $bucket8 < 50;
+
+        $this->assertSame($expected, $result);
+
+        $this->assertNotSame($bucket7, $bucket8);
+        $this->assertNotSame($bucket9, $bucket8);
+    }
+
+    #[Test]
+    public function moduloIs100Not99Or101(): void
+    {
+        $digest = hash(algo: 'sha256', data: 'test:user-1');
+        $bucket = hexdec(hex_string: substr(string: $digest, offset: 0, length: 8));
+        $mod100 = $bucket % 100;
+        $mod99 = $bucket % 99;
+        $mod101 = $bucket % 101;
+
+        $result = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: 50);
+        $expected = $mod100 < 50;
+
+        $this->assertSame($expected, $result);
+        $this->assertNotSame($mod99, $mod100);
+        $this->assertNotSame($mod101, $mod100);
+    }
+
+    #[Test]
+    public function comparisonIsStrictLessThan(): void
+    {
+        $digest = hash(algo: 'sha256', data: 'test:user-1');
+        $bucket = hexdec(hex_string: substr(string: $digest, offset: 0, length: 8)) % 100;
+
+        $resultAtBucket = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: $bucket);
+        $resultAtBucketPlus1 = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: $bucket + 1);
+
+        $this->assertFalse($resultAtBucket);
+        $this->assertTrue($resultAtBucketPlus1);
+    }
+
+    #[Test]
+    public function differentSaltsGiveDifferentDistribution(): void
+    {
+        $results = [];
+
+        for ($i = 1; $i <= 100; $i++) {
+            $a = $this->rollout->isEnabled(salt: 'salt-a', subjectId: (string) $i, rolloutPercentage: 50);
+            $b = $this->rollout->isEnabled(salt: 'salt-b', subjectId: (string) $i, rolloutPercentage: 50);
+            $results[] = $a !== $b;
+        }
+
+        $this->assertNotEmpty(array_filter($results));
+    }
+
+    #[Test]
+    public function fiftyPercentDistributesReasonably(): void
+    {
+        $enabled = 0;
+        $total = 1000;
+
+        for ($i = 1; $i <= $total; $i++) {
+            if ($this->rollout->isEnabled(salt: 'test', subjectId: (string) $i, rolloutPercentage: 50)) {
+                $enabled++;
+            }
+        }
+
+        $ratio = $enabled / $total;
+
+        $this->assertGreaterThan(0.35, $ratio);
+        $this->assertLessThan(0.65, $ratio);
+    }
+
+    #[Test]
+    public function lowRolloutRarelyEnabled(): void
+    {
+        $enabled = 0;
+
+        for ($i = 1; $i <= 1000; $i++) {
+            if ($this->rollout->isEnabled(salt: 'test', subjectId: (string) $i, rolloutPercentage: 1)) {
+                $enabled++;
+            }
+        }
+
+        $this->assertLessThan(30, $enabled);
+        $this->assertGreaterThan(0, $enabled);
+    }
+
+    #[Test]
+    public function highRolloutMostlyEnabled(): void
+    {
+        $enabled = 0;
+
+        for ($i = 1; $i <= 1000; $i++) {
+            if ($this->rollout->isEnabled(salt: 'test', subjectId: (string) $i, rolloutPercentage: 99)) {
+                $enabled++;
+            }
+        }
+
+        $this->assertGreaterThan(970, $enabled);
+        $this->assertLessThan(1000, $enabled);
+    }
+}

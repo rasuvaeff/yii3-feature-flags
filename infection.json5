@@ -1,0 +1,24 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": ["src"]
+    },
+    "logs": {
+        "text": "php://stderr",
+        "summary": "build/infection-summary.log"
+    },
+    "phpUnit": {
+        "configDir": "."
+    },
+    // 97, not 100: three equivalent mutants remain. No ignores.
+    // - FeatureFlags::__construct Coalesce: the injected FlagEvaluator is
+    //   behaviorally identical to the default one (FlagEvaluator is final and
+    //   PercentageRollout is final/stateless), so the swap is unobservable.
+    // - PercentageRollout::isEnabled === 0 / === 100 guards: pure short-circuits;
+    //   the hash path yields bucket<0 (always false) / bucket<100 (always true)
+    //   at the boundaries, producing the same result.
+    "minMsi": 97,
+    "mutators": {
+        "@default": true
+    }
+}

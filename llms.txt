@@ -1,0 +1,154 @@
+# yii3-feature-flags
+
+## Install
+
+```bash
+composer require rasuvaeff/yii3-feature-flags
+```
+
+## Rules
+
+- Stateless core. No DB/Redis dependency.
+- Deterministic rollout: `sha256(salt . ':' . subjectId)`, first 8 hex chars → bucket % 100.
+- Kill switch overrides all rules, including forced values.
+- Forced values are context-scoped, apply only to existing flags, and do not override a kill switch.
+- Unknown flag returns `false` in non-strict mode, throws `UnknownFlagException` in strict mode.
+- Flag name regex: `/^[a-z][a-z0-9._-]*$/`.
+- Rollout: 0..100 integer.
+
+## API Reference
+
+### FeatureFlags
+
+Facade service. Main entry point.
+
+```php
+use Rasuvaeff\Yii3FeatureFlags\FeatureFlags;
+use Rasuvaeff\Yii3FeatureFlags\ConfigFlagProvider;
+use Rasuvaeff\Yii3FeatureFlags\FlagContext;
+
+$provider = new ConfigFlagProvider(flags: [
+    'new-checkout' => [
+        'enabled' => true,
+        'salt' => 'checkout-v1',
+        'rollout' => 25,
+        'killSwitch' => false,
+        'environments' => ['production'],
+    ],
+]);
+
+$ff = new FeatureFlags(provider: $provider);
+
+// Check if enabled
+$ff->isEnabled(flag: 'new-checkout', context: FlagContext::forUser(userId: 'user-42'));
+// => bool
+
+// Check if disabled
+$ff->isDisabled(flag: 'new-checkout', context: FlagContext::forUser(userId: 'user-42'));
+
+// Detailed result
+$result = $ff->evaluate(flag: 'new-checkout', context: FlagContext::forUser(userId: 'user-42'));
+$result->isEnabled();             // bool
+$result->isKillSwitchActive();    // bool
+$result->isRolloutExcluded();     // bool
+$result->isEnvironmentExcluded(); // bool
+$result->getFlagName();           // string
+
+// Check existence
+$ff->has('new-checkout'); // => bool
+
+// Strict mode: unknown flags throw
+$ff = new FeatureFlags(provider: $provider, strictMode: true);
+```
+
+### FlagContext
+
+```php
+$ctx = FlagContext::forUser(userId: 'user-42');
+$ctx = FlagContext::forTenant(tenantId: 'tenant-1');
+$ctx = FlagContext::forEnvironment(environment: 'production');
+$ctx = FlagContext::empty();
+
+// Immutable with* methods
+$ctx = FlagContext::forUser(userId: 'user-42')
+    ->withEnvironment(environment: 'production')
+    ->withTenantId(tenantId: 'tenant-1')
+    ->withForcedFlag(flag: 'new-checkout', enabled: true);
+```
+
+### FlagConfig
+
+```php
+$config = new FlagConfig(enabled: true, rollout: 25);
+$flag = $config->toFlag(name: 'new-checkout');
+```
+
+### Flag
+
+Value object. Created by providers, not typically instantiated directly.
+
+```php
+$flag = new Flag(
+    name: 'my-flag',
+    enabled: true,
+    salt: 'my-flag-v1',
+    rollout: 50,
+    killSwitch: false,
+    environments: ['production'],
+);
+$flag->name;          // string
+$flag->enabled;       // bool
+$flag->salt;          // string
+$flag->rollout;       // int (0..100)
+$flag->killSwitch;    // bool
+$flag->environments;  // list<string>
+```
+
+### ConfigFlagProvider
+
+```php
+$provider = new ConfigFlagProvider(flags: [
+    'flag-name' => ['enabled' => true, 'rollout' => 50],
+]);
+$flags = $provider->getFlags(); // array<string, Flag>
+```
+
+### FlagRegistry
+
+```php
+$registry = new FlagRegistry(provider: $provider);
+$registry->has('flag-name');  // bool
+$registry->get('flag-name');  // Flag (throws UnknownFlagException if missing)
+$registry->all();             // array<string, Flag>
+```
+
+### EvaluationResult
+
+```php
+$result->getFlagName();           // string
+$result->isEnabled();             // bool
+$result->isKillSwitchActive();    // bool
+$result->isRolloutExcluded();     // bool
+$result->isEnvironmentExcluded(); // bool
+```
+
+### Exceptions
+
+- `InvalidFlagNameException` extends `InvalidArgumentException` — invalid flag name format or rollout range.
+- `UnknownFlagException` extends `InvalidArgumentException` — flag not found in strict mode.
+
+### Yii3 Integration
+
+Package provides `config-plugin` with `config/di.php` and `config/params.php`.
+Override in your application:
+
+```php
+// config/params.php
+return [
+    'rasuvaeff/yii3-feature-flags' => [
+        'flags' => [
+            'my-flag' => ['enabled' => true],
+        ],
+    ],
+];
+```
