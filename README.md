@@ -176,16 +176,24 @@ Deterministic assignment using `sha256(salt . ':' . subjectId)`:
 ## Examples
 
 See [examples/](examples/) for runnable scripts.
+Examples are expected to execute without fatal errors and stay aligned with the
+documented public API.
 
 ## Development
 
 ```bash
 make install     # composer install
 make build       # full gate: validate + cs + psalm + test
-make cs:fix      # fix code style
+make cs-fix      # fix code style
 make psalm       # static analysis
 make test        # run tests
+make test-coverage  # run coverage
+make mutation       # mutation testing
+make release-check  # build + rector + bc-check + mutation
 ```
+
+`make test-coverage` and `make mutation` bootstrap `pcov` inside the
+`composer:2` container because the base image has no coverage driver.
 
 ## License
 
