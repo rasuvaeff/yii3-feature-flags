@@ -146,8 +146,11 @@ $result->isEnvironmentExcluded(); // bool
 
 ### Yii3 Integration
 
-Package provides `config-plugin` with `config/di.php` and `config/params.php`.
-Override in your application:
+Package provides `config-plugin` with `config/di.php` (wires only the
+`FeatureFlags` facade) and `config/params.php`. The `FlagProvider` is NOT bound by
+the core — it is bound by exactly one provider: a storage backend (`-db`/`-redis`)
+or the application (config-only). Installing a backend wires `FlagProvider`
+automatically; do not also bind it manually or you get a `Duplicate key` error.
 
 ```php
 // config/params.php
@@ -156,6 +159,17 @@ return [
         'flags' => [
             'my-flag' => ['enabled' => true],
         ],
+    ],
+];
+
+// config/common/di/*.php — only for config-only setup (no storage backend)
+use Rasuvaeff\Yii3FeatureFlags\ConfigFlagProvider;
+use Rasuvaeff\Yii3FeatureFlags\FlagProvider;
+
+return [
+    FlagProvider::class => [
+        'class' => ConfigFlagProvider::class,
+        '__construct()' => ['flags' => $params['rasuvaeff/yii3-feature-flags']['flags']],
     ],
 ];
 ```
