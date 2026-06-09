@@ -161,10 +161,45 @@ Deterministic assignment using `sha256(salt . ':' . subjectId)`:
 
 ## Storage backends
 
+The core wires only the `FeatureFlags` facade. The `FlagProvider` implementation
+is supplied by **exactly one** provider — a storage backend or, for config-array
+flags, the application itself. This keeps backends drop-in: install one and it is
+wired automatically, with no `Duplicate key` config conflict.
+
 | Package | Description |
 |---|---|
 | [`rasuvaeff/yii3-feature-flags-db`](https://github.com/rasuvaeff/yii3-feature-flags-db) | Database (yiisoft/db) with PSR-16 caching and migration |
 | [`rasuvaeff/yii3-feature-flags-redis`](https://github.com/rasuvaeff/yii3-feature-flags-redis) | Redis HASH via Predis, read-only |
+
+Install a backend and you are done — it binds `FlagProvider` for you:
+
+```bash
+composer require rasuvaeff/yii3-feature-flags-db
+```
+
+### Config-only setup
+
+Without a storage backend, define flags in `params.php` and bind `FlagProvider`
+to `ConfigFlagProvider` once in your application config (`config/common/di/*.php`):
+
+```php
+use Rasuvaeff\Yii3FeatureFlags\ConfigFlagProvider;
+use Rasuvaeff\Yii3FeatureFlags\FlagProvider;
+
+/** @var array $params */
+
+return [
+    FlagProvider::class => [
+        'class' => ConfigFlagProvider::class,
+        '__construct()' => [
+            'flags' => $params['rasuvaeff/yii3-feature-flags']['flags'],
+        ],
+    ],
+];
+```
+
+Bind `FlagProvider` from a single source — installing two backends (or a backend
+plus a manual config binding) reintroduces the `Duplicate key` conflict.
 
 ## Security
 

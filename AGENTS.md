@@ -15,6 +15,11 @@ Public API: `FeatureFlags` (facade), `Flag`, `FlagContext`, `FlagProvider`,
 Storage backends: `rasuvaeff/yii3-feature-flags-db` (database + caching),
 `rasuvaeff/yii3-feature-flags-redis` (Redis HASH via Predis).
 
+DI wiring: the core `config/di.php` binds **only** `FeatureFlags`. It must NOT bind
+the `FlagProvider` interface — that key is owned by exactly one provider (a storage
+backend or the application's config-only binding). Two vendor packages binding
+`FlagProvider` in the `di` group trigger a `yiisoft/config` `Duplicate key` error.
+
 ## Golden rules
 
 1. **Verification is mandatory.** Never claim "done" without a fresh green
