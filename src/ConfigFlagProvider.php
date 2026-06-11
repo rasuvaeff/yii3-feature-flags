@@ -7,13 +7,13 @@ namespace Rasuvaeff\Yii3FeatureFlags;
 /**
  * @api
  */
-final class ConfigFlagProvider implements FlagProvider
+final readonly class ConfigFlagProvider implements FlagProvider
 {
     /**
      * @param array<string, array{enabled?: bool, salt?: string, rollout?: int, killSwitch?: bool, environments?: list<string>}|FlagConfig> $flags
      */
     public function __construct(
-        private readonly array $flags = [],
+        private array $flags = [],
     ) {}
 
     #[\Override]
