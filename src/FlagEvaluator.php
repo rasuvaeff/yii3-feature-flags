@@ -7,10 +7,10 @@ namespace Rasuvaeff\Yii3FeatureFlags;
 /**
  * @api
  */
-final class FlagEvaluator
+final readonly class FlagEvaluator
 {
     public function __construct(
-        private readonly PercentageRollout $rollout = new PercentageRollout(),
+        private PercentageRollout $rollout = new PercentageRollout(),
     ) {}
 
     public function evaluate(Flag $flag, FlagContext $context): EvaluationResult

@@ -7,7 +7,7 @@ namespace Rasuvaeff\Yii3FeatureFlags;
 /**
  * @api
  */
-final class FlagRegistry
+final readonly class FlagRegistry
 {
     /**
      * @var array<string, Flag>

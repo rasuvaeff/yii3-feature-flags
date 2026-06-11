@@ -7,16 +7,16 @@ namespace Rasuvaeff\Yii3FeatureFlags;
 /**
  * @api
  */
-final class FeatureFlags
+final readonly class FeatureFlags
 {
-    private readonly FlagRegistry $registry;
+    private FlagRegistry $registry;
 
-    private readonly FlagEvaluator $evaluator;
+    private FlagEvaluator $evaluator;
 
     public function __construct(
         FlagProvider $provider,
         ?FlagEvaluator $evaluator = null,
-        private readonly bool $strictMode = false,
+        private bool $strictMode = false,
     ) {
         $this->registry = new FlagRegistry(provider: $provider);
         $this->evaluator = $evaluator ?? new FlagEvaluator();
