@@ -168,7 +168,6 @@ wired automatically, with no `Duplicate key` config conflict.
 | Package | Description |
 |---|---|
 | [`rasuvaeff/yii3-feature-flags-db`](https://github.com/rasuvaeff/yii3-feature-flags-db) | Database (yiisoft/db) with PSR-16 caching and migration |
-| [`rasuvaeff/yii3-feature-flags-redis`](https://github.com/rasuvaeff/yii3-feature-flags-redis) | Redis HASH via Predis, read-only |
 
 Install a backend and you are done — it binds `FlagProvider` for you:
 

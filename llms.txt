@@ -142,13 +142,12 @@ $result->isEnvironmentExcluded(); // bool
 | Package | Description |
 |---|---|
 | `rasuvaeff/yii3-feature-flags-db` | Database (yiisoft/db) + PSR-16 caching + migration |
-| `rasuvaeff/yii3-feature-flags-redis` | Redis HASH via Predis, read-only |
 
 ### Yii3 Integration
 
 Package provides `config-plugin` with `config/di.php` (wires only the
 `FeatureFlags` facade) and `config/params.php`. The `FlagProvider` is NOT bound by
-the core — it is bound by exactly one provider: a storage backend (`-db`/`-redis`)
+the core — it is bound by exactly one provider: a storage backend (`-db`)
 or the application (config-only). Installing a backend wires `FlagProvider`
 automatically; do not also bind it manually or you get a `Duplicate key` error.
 

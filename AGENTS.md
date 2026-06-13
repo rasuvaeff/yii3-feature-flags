@@ -12,8 +12,7 @@ Public API: `FeatureFlags` (facade), `Flag`, `FlagContext`, `FlagProvider`,
 `ConfigFlagProvider`, `FlagRegistry`, `FlagEvaluator`, `PercentageRollout`,
 `EvaluationResult`.
 
-Storage backends: `rasuvaeff/yii3-feature-flags-db` (database + caching),
-`rasuvaeff/yii3-feature-flags-redis` (Redis HASH via Predis).
+Storage backend: `rasuvaeff/yii3-feature-flags-db` (database + caching).
 
 DI wiring: the core `config/di.php` binds **only** `FeatureFlags`. It must NOT bind
 the `FlagProvider` interface — that key is owned by exactly one provider (a storage
