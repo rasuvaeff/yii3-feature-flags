@@ -11,9 +11,10 @@
         "configDir": "."
     },
     // 97, not 100: three equivalent mutants remain. No ignores.
-    // - FeatureFlags::__construct Coalesce: the injected FlagEvaluator is
-    //   behaviorally identical to the default one (FlagEvaluator is final and
-    //   PercentageRollout is final/stateless), so the swap is unobservable.
+    // - FeatureFlags::__construct Coalesce on ?FlagEvaluator: the injected
+    //   evaluator is behaviorally identical to the default (FlagEvaluator is
+    //   final and PercentageRollout is final/stateless), so the swap is
+    //   unobservable.
     // - PercentageRollout::isEnabled === 0 / === 100 guards: pure short-circuits;
     //   the hash path yields bucket<0 (always false) / bucket<100 (always true)
     //   at the boundaries, producing the same result.

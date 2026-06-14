@@ -13,39 +13,27 @@ final readonly class Flag
 
     public string $name;
 
-    public bool $enabled;
-
     public string $salt;
 
     public int $rollout;
-
-    public bool $killSwitch;
-
-    /**
-     * @var list<string>
-     */
-    public array $environments;
 
     /**
      * @param list<string> $environments
      */
     public function __construct(
         string $name,
-        bool $enabled = true,
+        public bool $enabled = true,
         string $salt = '',
         int $rollout = 100,
-        bool $killSwitch = false,
-        array $environments = [],
+        public bool $killSwitch = false,
+        public array $environments = [],
     ) {
         $this->validateName($name);
         $this->validateRollout($rollout);
 
         $this->name = $name;
-        $this->enabled = $enabled;
         $this->salt = $salt !== '' ? $salt : $name;
         $this->rollout = $rollout;
-        $this->killSwitch = $killSwitch;
-        $this->environments = $environments;
     }
 
     private function validateName(string $name): void
@@ -60,7 +48,7 @@ final readonly class Flag
     private function validateRollout(int $rollout): void
     {
         if ($rollout < 0 || $rollout > 100) {
-            throw new Exception\InvalidFlagNameException(
+            throw new \InvalidArgumentException(
                 message: sprintf('Rollout percentage must be 0..100, got %d', $rollout),
             );
         }

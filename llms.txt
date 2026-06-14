@@ -14,7 +14,10 @@ composer require rasuvaeff/yii3-feature-flags
 - Forced values are context-scoped, apply only to existing flags, and do not override a kill switch.
 - Unknown flag returns `false` in non-strict mode, throws `UnknownFlagException` in strict mode.
 - Flag name regex: `/^[a-z][a-z0-9._-]*$/`.
-- Rollout: 0..100 integer.
+- Rollout: 0..100 integer. Out-of-range throws `\InvalidArgumentException` (not `InvalidFlagNameException`).
+- `EvaluationResult` is constructed only through static factories; `getReason()` returns an `EvaluationReason` enum.
+- `MetricsRecorder` is called exactly once per `evaluate()` (never on the strict-mode throw path).
+- Core `config/di.php` binds only `FeatureFlags`. It must not bind `FlagProvider` or `MetricsRecorder`.
 
 ## API Reference
 
@@ -48,17 +51,57 @@ $ff->isDisabled(flag: 'new-checkout', context: FlagContext::forUser(userId: 'use
 
 // Detailed result
 $result = $ff->evaluate(flag: 'new-checkout', context: FlagContext::forUser(userId: 'user-42'));
-$result->isEnabled();             // bool
-$result->isKillSwitchActive();    // bool
-$result->isRolloutExcluded();     // bool
-$result->isEnvironmentExcluded(); // bool
-$result->getFlagName();           // string
+$result->isEnabled();     // bool
+$result->getReason();     // EvaluationReason enum
+$result->getFlagName();   // string
 
 // Check existence
 $ff->has('new-checkout'); // => bool
 
 // Strict mode: unknown flags throw
 $ff = new FeatureFlags(provider: $provider, strictMode: true);
+
+// Custom metrics recorder (last argument)
+$ff = new FeatureFlags(provider: $provider, recorder: $myRecorder);
+```
+
+### EvaluationResult
+
+Created only through static factories — constructor is private.
+
+```php
+use Rasuvaeff\Yii3FeatureFlags\EvaluationResult;
+
+EvaluationResult::enabled(flagName: 'x');               // enabled=true,  reason=Enabled
+EvaluationResult::disabled(flagName: 'x');              // enabled=false, reason=Disabled
+EvaluationResult::killSwitch(flagName: 'x');            // enabled=false, reason=KillSwitch
+EvaluationResult::rolloutExcluded(flagName: 'x');       // enabled=false, reason=RolloutExcluded
+EvaluationResult::environmentExcluded(flagName: 'x');   // enabled=false, reason=EnvironmentExcluded
+EvaluationResult::forced(flagName: 'x', value: true);   // enabled=value, reason=Forced
+EvaluationResult::unknown(flagName: 'x');               // enabled=false, reason=Unknown
+
+$result->getFlagName();   // string
+$result->isEnabled();     // bool
+$result->getReason();     // EvaluationReason
+```
+
+### EvaluationReason
+
+String-backed enum.
+
+```php
+use Rasuvaeff\Yii3FeatureFlags\EvaluationReason;
+
+EvaluationReason::Enabled;             // 'enabled'
+EvaluationReason::Disabled;            // 'disabled'
+EvaluationReason::KillSwitch;          // 'kill_switch'
+EvaluationReason::RolloutExcluded;     // 'rollout_excluded'
+EvaluationReason::EnvironmentExcluded; // 'environment_excluded'
+EvaluationReason::Forced;              // 'forced'
+EvaluationReason::Unknown;             // 'unknown'
+
+$reason = $result->getReason();
+$reason->value;                        // string
 ```
 
 ### FlagContext
@@ -85,7 +128,7 @@ $flag = $config->toFlag(name: 'new-checkout');
 
 ### Flag
 
-Value object. Created by providers, not typically instantiated directly.
+Value object. Created by providers or directly when saving.
 
 ```php
 $flag = new Flag(
@@ -104,7 +147,22 @@ $flag->killSwitch;    // bool
 $flag->environments;  // list<string>
 ```
 
-### ConfigFlagProvider
+### FlagProvider / WritableFlagProvider
+
+```php
+interface FlagProvider {
+    /** @return array<string, Flag> */
+    public function getFlags(): array;
+}
+
+interface WritableFlagProvider extends FlagProvider {
+    public function save(Flag $flag): void;      // upsert by name
+    public function remove(string $name): void;   // delete by name
+}
+```
+
+`ConfigFlagProvider` is read-only (implements `FlagProvider` only). `DbFlagProvider`
+and `CachedFlagProvider` in `yii3-feature-flags-db` implement `WritableFlagProvider`.
 
 ```php
 $provider = new ConfigFlagProvider(flags: [
@@ -122,34 +180,49 @@ $registry->get('flag-name');  // Flag (throws UnknownFlagException if missing)
 $registry->all();             // array<string, Flag>
 ```
 
-### EvaluationResult
+### MetricsRecorder / NullMetricsRecorder
 
 ```php
-$result->getFlagName();           // string
-$result->isEnabled();             // bool
-$result->isKillSwitchActive();    // bool
-$result->isRolloutExcluded();     // bool
-$result->isEnvironmentExcluded(); // bool
+interface MetricsRecorder {
+    public function recordEvaluation(EvaluationResult $result): void;
+}
+```
+
+- Constructor default of `FeatureFlags` is `new NullMetricsRecorder()`.
+- Called exactly once per `evaluate()` (once per `isEnabled()`/`isDisabled()` too).
+- NOT called when strict mode throws `UnknownFlagException`.
+- Core `config/di.php` does NOT bind `MetricsRecorder`. Adapter packages bind it in their own config.
+
+```php
+$recorder = new class implements MetricsRecorder {
+    #[\Override]
+    public function recordEvaluation(EvaluationResult $result): void {
+        // best-effort; never throw
+    }
+};
+$ff = new FeatureFlags(provider: $provider, recorder: $recorder);
 ```
 
 ### Exceptions
 
-- `InvalidFlagNameException` extends `InvalidArgumentException` — invalid flag name format or rollout range.
+- `InvalidFlagNameException` extends `InvalidArgumentException` — invalid flag name format.
+- `\InvalidArgumentException` — rollout range violation (0..100).
 - `UnknownFlagException` extends `InvalidArgumentException` — flag not found in strict mode.
 
 ### Storage backends
 
 | Package | Description |
 |---|---|
-| `rasuvaeff/yii3-feature-flags-db` | Database (yiisoft/db) + PSR-16 caching + migration |
+| `rasuvaeff/yii3-feature-flags-db` | Database (yiisoft/db) + PSR-16 caching + migration; implements `WritableFlagProvider` |
 
 ### Yii3 Integration
 
 Package provides `config-plugin` with `config/di.php` (wires only the
-`FeatureFlags` facade) and `config/params.php`. The `FlagProvider` is NOT bound by
-the core — it is bound by exactly one provider: a storage backend (`-db`)
-or the application (config-only). Installing a backend wires `FlagProvider`
-automatically; do not also bind it manually or you get a `Duplicate key` error.
+`FeatureFlags` facade) and `config/params.php`. Neither `FlagProvider` nor
+`MetricsRecorder` is bound by the core — they are bound by exactly one provider:
+a storage backend (`-db`) or the application (config-only). Installing a backend
+wires `FlagProvider` automatically; do not also bind it manually or you get a
+`Duplicate key` error.
 
 ```php
 // config/params.php

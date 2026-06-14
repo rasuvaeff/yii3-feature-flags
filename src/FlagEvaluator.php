@@ -16,37 +16,21 @@ final readonly class FlagEvaluator
     public function evaluate(Flag $flag, FlagContext $context): EvaluationResult
     {
         if ($flag->killSwitch) {
-            return new EvaluationResult(
-                flagName: $flag->name,
-                enabled: false,
-                killSwitchActive: true,
-            );
+            return EvaluationResult::killSwitch(flagName: $flag->name);
         }
 
         if (!$flag->enabled) {
-            return new EvaluationResult(
-                flagName: $flag->name,
-                enabled: false,
-            );
+            return EvaluationResult::disabled(flagName: $flag->name);
         }
 
-        if ($flag->environments !== [] && $context->getEnvironment() !== null) {
-            if (!in_array(needle: $context->getEnvironment(), haystack: $flag->environments, strict: true)) {
-                return new EvaluationResult(
-                    flagName: $flag->name,
-                    enabled: false,
-                    environmentExcluded: true,
-                );
-            }
+        if ($flag->environments !== [] && $context->getEnvironment() !== null && !in_array(needle: $context->getEnvironment(), haystack: $flag->environments, strict: true)) {
+            return EvaluationResult::environmentExcluded(flagName: $flag->name);
         }
 
         $subjectId = $context->getUserId() ?? $context->getTenantId();
 
         if ($subjectId === null) {
-            return new EvaluationResult(
-                flagName: $flag->name,
-                enabled: true,
-            );
+            return EvaluationResult::enabled(flagName: $flag->name);
         }
 
         $enabled = $this->rollout->isEnabled(
@@ -55,10 +39,8 @@ final readonly class FlagEvaluator
             rolloutPercentage: $flag->rollout,
         );
 
-        return new EvaluationResult(
-            flagName: $flag->name,
-            enabled: $enabled,
-            rolloutExcluded: !$enabled,
-        );
+        return $enabled
+            ? EvaluationResult::enabled(flagName: $flag->name)
+            : EvaluationResult::rolloutExcluded(flagName: $flag->name);
     }
 }

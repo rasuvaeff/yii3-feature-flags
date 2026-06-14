@@ -74,7 +74,7 @@ final class FlagTest extends TestCase
     #[Test]
     public function throwsOnInvalidRolloutTooHigh(): void
     {
-        $this->expectException(InvalidFlagNameException::class);
+        $this->expectException(\InvalidArgumentException::class);
 
         new Flag(name: 'my-flag', rollout: 101);
     }
@@ -82,9 +82,22 @@ final class FlagTest extends TestCase
     #[Test]
     public function throwsOnInvalidRolloutNegative(): void
     {
-        $this->expectException(InvalidFlagNameException::class);
+        $this->expectException(\InvalidArgumentException::class);
 
         new Flag(name: 'my-flag', rollout: -1);
+    }
+
+    #[Test]
+    public function rolloutErrorIsPlainInvalidArgumentExceptionNotInvalidFlagNameException(): void
+    {
+        try {
+            new Flag(name: 'my-flag', rollout: 101);
+            $this->fail('Expected exception was not thrown');
+        } catch (InvalidFlagNameException) {
+            $this->fail('Rollout validation must not throw InvalidFlagNameException');
+        } catch (\InvalidArgumentException $e) {
+            $this->assertStringContainsString('Rollout percentage must be 0..100', $e->getMessage());
+        }
     }
 
     #[Test]

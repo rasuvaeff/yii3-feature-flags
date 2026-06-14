@@ -46,4 +46,4 @@ echo "  Enabled: {$enabled}/100\n";
 echo "\nDetailed evaluation for user-42:\n";
 $result = $ff->evaluate(flag: 'rollout-50', context: FlagContext::forUser(userId: 'user-42'));
 echo "  Enabled: " . ($result->isEnabled() ? 'yes' : 'no') . "\n";
-echo "  Rollout excluded: " . ($result->isRolloutExcluded() ? 'yes' : 'no') . "\n";
+echo "  Reason: " . $result->getReason()->value . "\n";

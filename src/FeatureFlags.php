@@ -13,13 +13,17 @@ final readonly class FeatureFlags
 
     private FlagEvaluator $evaluator;
 
+    private MetricsRecorder $recorder;
+
     public function __construct(
         FlagProvider $provider,
         ?FlagEvaluator $evaluator = null,
         private bool $strictMode = false,
+        ?MetricsRecorder $recorder = null,
     ) {
         $this->registry = new FlagRegistry(provider: $provider);
         $this->evaluator = $evaluator ?? new FlagEvaluator();
+        $this->recorder = $recorder ?? new NullMetricsRecorder();
     }
 
     public function isEnabled(
@@ -49,20 +53,32 @@ final readonly class FeatureFlags
                 );
             }
 
-            return new EvaluationResult(flagName: $flag, enabled: false);
+            $result = EvaluationResult::unknown(flagName: $flag);
+
+            $this->recorder->recordEvaluation(result: $result);
+
+            return $result;
         }
 
         $resolved = $this->registry->get($flag);
         $forcedValue = $context->getForcedValue($flag);
 
         if ($forcedValue !== null && !$resolved->killSwitch) {
-            return new EvaluationResult(flagName: $flag, enabled: $forcedValue);
+            $result = EvaluationResult::forced(flagName: $flag, value: $forcedValue);
+
+            $this->recorder->recordEvaluation(result: $result);
+
+            return $result;
         }
 
-        return $this->evaluator->evaluate(
+        $result = $this->evaluator->evaluate(
             flag: $resolved,
             context: $context,
         );
+
+        $this->recorder->recordEvaluation(result: $result);
+
+        return $result;
     }
 
     public function has(string $flag): bool

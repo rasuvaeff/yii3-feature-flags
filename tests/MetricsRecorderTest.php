@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Rasuvaeff\Yii3FeatureFlags\Tests;
+
+use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use Rasuvaeff\Yii3FeatureFlags\EvaluationResult;
+use Rasuvaeff\Yii3FeatureFlags\MetricsRecorder;
+
+#[CoversNothing]
+final class MetricsRecorderTest extends TestCase
+{
+    #[Test]
+    public function anonymousImplementationReceivesResult(): void
+    {
+        $spy = new class implements MetricsRecorder {
+            public ?EvaluationResult $received = null;
+
+            #[\Override]
+            public function recordEvaluation(EvaluationResult $result): void
+            {
+                $this->received = $result;
+            }
+        };
+
+        $result = EvaluationResult::enabled(flagName: 'flag');
+
+        $spy->recordEvaluation(result: $result);
+
+        $this->assertSame($result, $spy->received);
+    }
+}

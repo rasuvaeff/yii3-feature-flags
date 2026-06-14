@@ -124,10 +124,23 @@ $result = $featureFlags->evaluate(
     context: FlagContext::forUser(userId: $userId),
 );
 
-$result->isEnabled();            // bool
-$result->isKillSwitchActive();   // bool
-$result->isRolloutExcluded();    // bool
-$result->isEnvironmentExcluded();// bool
+$result->isEnabled();      // bool
+$result->getReason();      // EvaluationReason enum
+$result->getFlagName();    // string
+```
+
+`EvaluationReason` carries a single machine-readable reason instead of a set of
+overlapping booleans:
+
+| Case | `enabled` | When |
+|---|---|---|
+| `Enabled` | `true` | Flag on, no targeting/rollout exclusion |
+| `Disabled` | `false` | `enabled: false` on the flag |
+| `KillSwitch` | `false` | `killSwitch: true` overrides everything |
+| `RolloutExcluded` | `false` | Subject outside the rollout bucket |
+| `EnvironmentExcluded` | `false` | Context environment not in the flag's allowlist |
+| `Forced` | caller-set | `FlagContext::withForcedFlag()` overrode the result |
+| `Unknown` | `false` | Flag not registered (non-strict mode) |
 ```
 
 ### Kill switch
@@ -151,18 +164,22 @@ Deterministic assignment using `sha256(salt . ':' . subjectId)`:
 | `Flag` | Immutable flag value object |
 | `FlagConfig` | Config DTO for programmatic flag definitions |
 | `FlagContext` | Evaluation context (userId, tenantId, environment) |
-| `FlagProvider` | Interface for flag sources |
-| `ConfigFlagProvider` | Provider from PHP config arrays |
+| `FlagProvider` | Read-only interface for flag sources |
+| `WritableFlagProvider` | `extends FlagProvider`: adds `save(Flag)`, `remove(string)` |
+| `ConfigFlagProvider` | Provider from PHP config arrays (read-only) |
 | `FlagRegistry` | Named flag lookup |
 | `FlagEvaluator` | Core evaluation logic |
 | `PercentageRollout` | Deterministic percentage assignment |
-| `EvaluationResult` | Detailed evaluation outcome |
+| `EvaluationResult` | Detailed evaluation outcome (private constructor; 7 static factories) |
+| `EvaluationReason` | String-backed enum of evaluation outcomes |
+| `MetricsRecorder` | Interface for recording evaluation metrics |
+| `NullMetricsRecorder` | No-op default implementation |
 
 ## Storage backends
 
 The core wires only the `FeatureFlags` facade. The `FlagProvider` implementation
 is supplied by **exactly one** provider — a storage backend or, for config-array
-flags, the application itself. This keeps backends drop-in: install one and it is
+flags, the application. This keeps backends drop-in: install one and it is
 wired automatically, with no `Duplicate key` config conflict.
 
 | Package | Description |
@@ -174,6 +191,51 @@ Install a backend and you are done — it binds `FlagProvider` for you:
 ```bash
 composer require rasuvaeff/yii3-feature-flags-db
 ```
+
+### Writable backends
+
+A backend may implement `WritableFlagProvider` to support programmatic flag
+CRUD (e.g. via an admin UI). `DbFlagProvider` and `CachedFlagProvider` in
+`yii3-feature-flags-db` both implement it; `ConfigFlagProvider` does not — it is
+read-only.
+
+```php
+use Rasuvaeff\Yii3FeatureFlags\Flag;
+use Rasuvaeff\Yii3FeatureFlags\WritableFlagProvider;
+
+/** @var WritableFlagProvider $provider */
+$provider->save(flag: new Flag(name: 'new-checkout', rollout: 25));
+$provider->remove(name: 'old-checkout');
+```
+
+`save()` is an upsert keyed by the flag `name`. Implementations that decorate a
+cache (e.g. `CachedFlagProvider`) invalidate themselves after a successful write.
+
+## Metrics
+
+`FeatureFlags` accepts an optional `MetricsRecorder` as its last constructor
+argument. After each `evaluate()` call it receives the resulting
+`EvaluationResult` exactly once (never on the throw path in strict mode). The
+default is `NullMetricsRecorder`, which is a no-op — passing nothing is safe.
+
+```php
+use Rasuvaeff\Yii3FeatureFlags\FeatureFlags;
+use Rasuvaeff\Yii3FeatureFlags\MetricsRecorder;
+
+$recorder = new class implements MetricsRecorder {
+    #[\Override]
+    public function recordEvaluation(\Rasuvaeff\Yii3FeatureFlags\EvaluationResult $result): void
+    {
+        // ship $result->getReason()->value to your metrics backend
+    }
+};
+
+$featureFlags = new FeatureFlags(provider: $provider, recorder: $recorder);
+```
+
+Adapter packages (`-psr-logger`, `-prometheus`, …) may be added later; the core
+**does not** bind `MetricsRecorder` in its `config/di.php`, so installing an
+adapter next to the core will never trigger a `Duplicate key` error.
 
 ### Config-only setup
 

@@ -9,15 +9,19 @@ Stateless core — storage backends are separate packages. Deterministic rollout
 hash. Namespace: `Rasuvaeff\Yii3FeatureFlags`.
 
 Public API: `FeatureFlags` (facade), `Flag`, `FlagContext`, `FlagProvider`,
-`ConfigFlagProvider`, `FlagRegistry`, `FlagEvaluator`, `PercentageRollout`,
-`EvaluationResult`.
+`WritableFlagProvider`, `ConfigFlagProvider`, `FlagRegistry`, `FlagEvaluator`,
+`PercentageRollout`, `EvaluationResult`, `EvaluationReason`, `MetricsRecorder`,
+`NullMetricsRecorder`.
 
-Storage backend: `rasuvaeff/yii3-feature-flags-db` (database + caching).
+Storage backend: `rasuvaeff/yii3-feature-flags-db` (database + caching). It
+implements `WritableFlagProvider` for both `DbFlagProvider` and `CachedFlagProvider`.
 
 DI wiring: the core `config/di.php` binds **only** `FeatureFlags`. It must NOT bind
 the `FlagProvider` interface — that key is owned by exactly one provider (a storage
-backend or the application's config-only binding). Two vendor packages binding
-`FlagProvider` in the `di` group trigger a `yiisoft/config` `Duplicate key` error.
+backend or the application's config-only binding). It must NOT bind
+`MetricsRecorder` either — that key is reserved for adapter packages
+(`-psr-logger`, `-prometheus`, …). Two vendor packages binding either key in the
+`di` group trigger a `yiisoft/config` `Duplicate key` error.
 
 ## Golden rules
 
@@ -26,7 +30,10 @@ backend or the application's config-only binding). Two vendor packages binding
 2. **No suppressions.** No `@psalm-suppress`, no baseline. Fix the root cause.
 3. **Deterministic rollout.** Same `salt` + `subjectId` must always produce the
    same result. Changing `salt` is the only way to re-randomize.
-4. **Preserve the public contract.** Update README + tests with any API change.
+4. **Metrics never throw.** `MetricsRecorder` implementations catch their own
+   errors internally — evaluation results must never be lost because of a
+   metrics adapter failure.
+5. **Preserve the public contract.** Update README + tests with any API change.
 
 ## Commands
 
@@ -60,12 +67,19 @@ make release-check
 
 - Kill switch always overrides rollout, targeting and forced values.
 - Rollout deterministic: `sha256(salt . ':' . subjectId)`, first 8 hex → bucket % 100.
-- Flag name regex: `/^[a-z][a-z0-9._-]*$/`.
-- Rollout percentage range: 0..100 inclusive.
-- Unknown flag returns `false` in non-strict mode, throws in strict mode.
+- Flag name regex: `/^[a-z][a-z0-9._-]*$/` — failure throws `InvalidFlagNameException`.
+- Rollout percentage range: 0..100 inclusive — failure throws plain
+  `\InvalidArgumentException` (UI maps form errors by exception type).
+- `EvaluationResult` has a private constructor; build via the 7 static factories.
+  The `EvaluationReason` enum is the single source of truth for "why".
+- Unknown flag returns `false` (reason `Unknown`) in non-strict mode, throws in strict mode.
 - User ID takes priority over tenant ID for rollout subject.
 - Environment check only applies when flag has environments configured AND
   context provides an environment.
+- `WritableFlagProvider extends FlagProvider`. Cache decorators that implement it
+  invalidate themselves after a successful `save()` / `remove()`.
+- Core DI does not bind `MetricsRecorder`; `FeatureFlags` defaults to
+  `NullMetricsRecorder` when none is injected.
 - Code: `declare(strict_types=1)`, `final readonly class`, `#[\Override]`,
   explicit types.
 - `examples/` is part of the public contract: keep scripts runnable and update

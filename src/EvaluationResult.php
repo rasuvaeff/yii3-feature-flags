@@ -9,13 +9,46 @@ namespace Rasuvaeff\Yii3FeatureFlags;
  */
 final readonly class EvaluationResult
 {
-    public function __construct(
+    private function __construct(
         private string $flagName,
         private bool $enabled,
-        private bool $killSwitchActive = false,
-        private bool $rolloutExcluded = false,
-        private bool $environmentExcluded = false,
+        private EvaluationReason $reason,
     ) {}
+
+    public static function enabled(string $flagName): self
+    {
+        return new self(flagName: $flagName, enabled: true, reason: EvaluationReason::Enabled);
+    }
+
+    public static function disabled(string $flagName): self
+    {
+        return new self(flagName: $flagName, enabled: false, reason: EvaluationReason::Disabled);
+    }
+
+    public static function killSwitch(string $flagName): self
+    {
+        return new self(flagName: $flagName, enabled: false, reason: EvaluationReason::KillSwitch);
+    }
+
+    public static function rolloutExcluded(string $flagName): self
+    {
+        return new self(flagName: $flagName, enabled: false, reason: EvaluationReason::RolloutExcluded);
+    }
+
+    public static function environmentExcluded(string $flagName): self
+    {
+        return new self(flagName: $flagName, enabled: false, reason: EvaluationReason::EnvironmentExcluded);
+    }
+
+    public static function forced(string $flagName, bool $value): self
+    {
+        return new self(flagName: $flagName, enabled: $value, reason: EvaluationReason::Forced);
+    }
+
+    public static function unknown(string $flagName): self
+    {
+        return new self(flagName: $flagName, enabled: false, reason: EvaluationReason::Unknown);
+    }
 
     public function getFlagName(): string
     {
@@ -27,18 +60,8 @@ final readonly class EvaluationResult
         return $this->enabled;
     }
 
-    public function isKillSwitchActive(): bool
+    public function getReason(): EvaluationReason
     {
-        return $this->killSwitchActive;
-    }
-
-    public function isRolloutExcluded(): bool
-    {
-        return $this->rolloutExcluded;
-    }
-
-    public function isEnvironmentExcluded(): bool
-    {
-        return $this->environmentExcluded;
+        return $this->reason;
     }
 }
