@@ -4,59 +4,55 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversNothing;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\Flag;
 use Rasuvaeff\Yii3FeatureFlags\FlagProvider;
 use Rasuvaeff\Yii3FeatureFlags\WritableFlagProvider;
+use Testo\Assert;
+use Testo\Codecov\CoversNothing;
+use Testo\Test;
 
+#[Test]
 #[CoversNothing]
-final class WritableFlagProviderTest extends TestCase
+final class WritableFlagProviderTest
 {
-    #[Test]
     public function extendsFlagProvider(): void
     {
         $reflection = new \ReflectionClass(WritableFlagProvider::class);
 
-        $this->assertTrue($reflection->isSubclassOf(FlagProvider::class));
+        Assert::true($reflection->isSubclassOf(FlagProvider::class));
     }
 
-    #[Test]
     public function hasSaveAndRemoveMethods(): void
     {
         $reflection = new \ReflectionClass(WritableFlagProvider::class);
 
-        $this->assertTrue($reflection->hasMethod('save'));
-        $this->assertTrue($reflection->hasMethod('remove'));
-        $this->assertTrue($reflection->hasMethod('getFlags'));
+        Assert::true($reflection->hasMethod('save'));
+        Assert::true($reflection->hasMethod('remove'));
+        Assert::true($reflection->hasMethod('getFlags'));
     }
 
-    #[Test]
     public function saveReturnsVoidAndAcceptsFlag(): void
     {
         $reflection = new \ReflectionMethod(WritableFlagProvider::class, 'save');
 
-        $this->assertSame('void', (string) $reflection->getReturnType());
+        Assert::same((string) $reflection->getReturnType(), 'void');
         $params = $reflection->getParameters();
-        $this->assertCount(1, $params);
-        $this->assertSame('flag', $params[0]->getName());
-        $this->assertSame(Flag::class, (string) $params[0]->getType());
+        Assert::count($params, 1);
+        Assert::same($params[0]->getName(), 'flag');
+        Assert::same((string) $params[0]->getType(), Flag::class);
     }
 
-    #[Test]
     public function removeReturnsVoidAndAcceptsString(): void
     {
         $reflection = new \ReflectionMethod(WritableFlagProvider::class, 'remove');
 
-        $this->assertSame('void', (string) $reflection->getReturnType());
+        Assert::same((string) $reflection->getReturnType(), 'void');
         $params = $reflection->getParameters();
-        $this->assertCount(1, $params);
-        $this->assertSame('name', $params[0]->getName());
-        $this->assertSame('string', (string) $params[0]->getType());
+        Assert::count($params, 1);
+        Assert::same($params[0]->getName(), 'name');
+        Assert::same((string) $params[0]->getType(), 'string');
     }
 
-    #[Test]
     public function smokeRoundTripWithAnonymousImplementation(): void
     {
         $provider = new class implements WritableFlagProvider {
@@ -86,10 +82,10 @@ final class WritableFlagProviderTest extends TestCase
 
         $provider->save(flag: $flag);
 
-        $this->assertSame(['new-flag' => $flag], $provider->getFlags());
+        Assert::same($provider->getFlags(), ['new-flag' => $flag]);
 
         $provider->remove(name: 'new-flag');
 
-        $this->assertSame([], $provider->getFlags());
+        Assert::same($provider->getFlags(), []);
     }
 }

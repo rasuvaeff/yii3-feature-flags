@@ -4,25 +4,24 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\ConfigFlagProvider;
 use Rasuvaeff\Yii3FeatureFlags\Flag;
 use Rasuvaeff\Yii3FeatureFlags\FlagConfig;
+use Testo\Assert;
+use Testo\Codecov\Covers;
+use Testo\Test;
 
-#[CoversClass(ConfigFlagProvider::class)]
-final class ConfigFlagProviderTest extends TestCase
+#[Test]
+#[Covers(ConfigFlagProvider::class)]
+final class ConfigFlagProviderTest
 {
-    #[Test]
     public function returnsEmptyFlagsWhenNoConfig(): void
     {
         $provider = new ConfigFlagProvider(flags: []);
 
-        $this->assertSame([], $provider->getFlags());
+        Assert::same($provider->getFlags(), []);
     }
 
-    #[Test]
     public function createsFlagsFromConfig(): void
     {
         $provider = new ConfigFlagProvider(flags: [
@@ -37,13 +36,12 @@ final class ConfigFlagProviderTest extends TestCase
 
         $flags = $provider->getFlags();
 
-        $this->assertCount(1, $flags);
-        $this->assertArrayHasKey('my-flag', $flags);
-        $this->assertInstanceOf(Flag::class, $flags['my-flag']);
-        $this->assertSame(50, $flags['my-flag']->rollout);
+        Assert::count($flags, 1);
+        Assert::array($flags)->hasKeys('my-flag');
+        Assert::instanceOf($flags['my-flag'], Flag::class);
+        Assert::same($flags['my-flag']->rollout, 50);
     }
 
-    #[Test]
     public function createsFlagsFromFlagConfigObjects(): void
     {
         $provider = new ConfigFlagProvider(flags: [
@@ -58,14 +56,13 @@ final class ConfigFlagProviderTest extends TestCase
 
         $flag = $provider->getFlags()['my-flag'];
 
-        $this->assertFalse($flag->enabled);
-        $this->assertSame('my-flag-v2', $flag->salt);
-        $this->assertSame(25, $flag->rollout);
-        $this->assertTrue($flag->killSwitch);
-        $this->assertSame(['production'], $flag->environments);
+        Assert::false($flag->enabled);
+        Assert::same($flag->salt, 'my-flag-v2');
+        Assert::same($flag->rollout, 25);
+        Assert::true($flag->killSwitch);
+        Assert::same($flag->environments, ['production']);
     }
 
-    #[Test]
     public function continuesProcessingAfterFlagConfigObject(): void
     {
         $provider = new ConfigFlagProvider(flags: [
@@ -75,12 +72,11 @@ final class ConfigFlagProviderTest extends TestCase
 
         $flags = $provider->getFlags();
 
-        $this->assertCount(2, $flags);
-        $this->assertArrayHasKey('first', $flags);
-        $this->assertArrayHasKey('second', $flags);
+        Assert::count($flags, 2);
+        Assert::array($flags)->hasKeys('first');
+        Assert::array($flags)->hasKeys('second');
     }
 
-    #[Test]
     public function appliesDefaultsForMissingConfigKeys(): void
     {
         $provider = new ConfigFlagProvider(flags: [
@@ -90,14 +86,13 @@ final class ConfigFlagProviderTest extends TestCase
         $flags = $provider->getFlags();
         $flag = $flags['my-flag'];
 
-        $this->assertTrue($flag->enabled);
-        $this->assertSame('my-flag', $flag->salt);
-        $this->assertSame(100, $flag->rollout);
-        $this->assertFalse($flag->killSwitch);
-        $this->assertSame([], $flag->environments);
+        Assert::true($flag->enabled);
+        Assert::same($flag->salt, 'my-flag');
+        Assert::same($flag->rollout, 100);
+        Assert::false($flag->killSwitch);
+        Assert::same($flag->environments, []);
     }
 
-    #[Test]
     public function createsMultipleFlags(): void
     {
         $provider = new ConfigFlagProvider(flags: [
@@ -107,12 +102,11 @@ final class ConfigFlagProviderTest extends TestCase
 
         $flags = $provider->getFlags();
 
-        $this->assertCount(2, $flags);
-        $this->assertTrue($flags['flag-a']->enabled);
-        $this->assertFalse($flags['flag-b']->enabled);
+        Assert::count($flags, 2);
+        Assert::true($flags['flag-a']->enabled);
+        Assert::false($flags['flag-b']->enabled);
     }
 
-    #[Test]
     public function emptySaltFallsBackToName(): void
     {
         $provider = new ConfigFlagProvider(flags: [
@@ -121,10 +115,9 @@ final class ConfigFlagProviderTest extends TestCase
 
         $flag = $provider->getFlags()['my-flag'];
 
-        $this->assertSame('my-flag', $flag->salt);
+        Assert::same($flag->salt, 'my-flag');
     }
 
-    #[Test]
     public function explicitSaltOverridesName(): void
     {
         $provider = new ConfigFlagProvider(flags: [
@@ -133,10 +126,9 @@ final class ConfigFlagProviderTest extends TestCase
 
         $flag = $provider->getFlags()['my-flag'];
 
-        $this->assertSame('custom-salt', $flag->salt);
+        Assert::same($flag->salt, 'custom-salt');
     }
 
-    #[Test]
     public function missingKillSwitchDefaultsToFalse(): void
     {
         $provider = new ConfigFlagProvider(flags: [
@@ -146,11 +138,10 @@ final class ConfigFlagProviderTest extends TestCase
 
         $flags = $provider->getFlags();
 
-        $this->assertTrue($flags['flag-with-kill']->killSwitch);
-        $this->assertFalse($flags['flag-without-kill']->killSwitch);
+        Assert::true($flags['flag-with-kill']->killSwitch);
+        Assert::false($flags['flag-without-kill']->killSwitch);
     }
 
-    #[Test]
     public function missingEnvironmentsDefaultsToEmpty(): void
     {
         $provider = new ConfigFlagProvider(flags: [
@@ -160,7 +151,7 @@ final class ConfigFlagProviderTest extends TestCase
 
         $flags = $provider->getFlags();
 
-        $this->assertSame(['production'], $flags['with-envs']->environments);
-        $this->assertSame([], $flags['without-envs']->environments);
+        Assert::same($flags['with-envs']->environments, ['production']);
+        Assert::same($flags['without-envs']->environments, []);
     }
 }

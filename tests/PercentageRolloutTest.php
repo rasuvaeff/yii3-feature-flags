@@ -4,48 +4,46 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\PercentageRollout;
+use Testo\Assert;
+use Testo\Codecov\Covers;
+use Testo\Lifecycle\BeforeTest;
+use Testo\Test;
 
-#[CoversClass(PercentageRollout::class)]
-final class PercentageRolloutTest extends TestCase
+#[Test]
+#[Covers(PercentageRollout::class)]
+final class PercentageRolloutTest
 {
     private PercentageRollout $rollout;
 
-    #[\Override]
-    protected function setUp(): void
+    #[BeforeTest]
+    public function setUp(): void
     {
         $this->rollout = new PercentageRollout();
     }
 
-    #[Test]
     public function zeroRolloutAlwaysDisabled(): void
     {
-        $this->assertFalse(
+        Assert::false(
             $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: 0),
         );
     }
 
-    #[Test]
     public function hundredRolloutAlwaysEnabled(): void
     {
-        $this->assertTrue(
+        Assert::true(
             $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: 100),
         );
     }
 
-    #[Test]
     public function sameSubjectGetsSameResult(): void
     {
         $result1 = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-42', rolloutPercentage: 50);
         $result2 = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-42', rolloutPercentage: 50);
 
-        $this->assertSame($result1, $result2);
+        Assert::same($result1, $result2);
     }
 
-    #[Test]
     public function hashIsDeterministicWithKnownValues(): void
     {
         $enabled = $this->rollout->isEnabled(salt: 'test-salt', subjectId: 'user-1', rolloutPercentage: 50);
@@ -54,19 +52,17 @@ final class PercentageRolloutTest extends TestCase
         $bucket = hexdec(hex_string: substr(string: $digest, offset: 0, length: 8)) % 100;
         $expected = $bucket < 50;
 
-        $this->assertSame($expected, $enabled);
+        Assert::same($expected, $enabled);
     }
 
-    #[Test]
     public function hashUsesColonSeparator(): void
     {
         $withColon = $this->rollout->isEnabled(salt: 'a', subjectId: 'b', rolloutPercentage: 50);
         $withoutColon = $this->rollout->isEnabled(salt: 'ab', subjectId: '', rolloutPercentage: 50);
 
-        $this->assertNotSame($withColon, $withoutColon);
+        Assert::notSame($withColon, $withoutColon);
     }
 
-    #[Test]
     public function hashUsesFirst8HexChars(): void
     {
         $digest = hash(algo: 'sha256', data: 'test:user-1');
@@ -77,13 +73,12 @@ final class PercentageRolloutTest extends TestCase
         $result = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: 50);
         $expected = $bucket8 < 50;
 
-        $this->assertSame($expected, $result);
+        Assert::same($expected, $result);
 
-        $this->assertNotSame($bucket7, $bucket8);
-        $this->assertNotSame($bucket9, $bucket8);
+        Assert::notSame($bucket7, $bucket8);
+        Assert::notSame($bucket9, $bucket8);
     }
 
-    #[Test]
     public function moduloIs100Not99Or101(): void
     {
         $digest = hash(algo: 'sha256', data: 'test:user-1');
@@ -95,12 +90,11 @@ final class PercentageRolloutTest extends TestCase
         $result = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: 50);
         $expected = $mod100 < 50;
 
-        $this->assertSame($expected, $result);
-        $this->assertNotSame($mod99, $mod100);
-        $this->assertNotSame($mod101, $mod100);
+        Assert::same($expected, $result);
+        Assert::notSame($mod99, $mod100);
+        Assert::notSame($mod101, $mod100);
     }
 
-    #[Test]
     public function comparisonIsStrictLessThan(): void
     {
         $digest = hash(algo: 'sha256', data: 'test:user-1');
@@ -109,11 +103,10 @@ final class PercentageRolloutTest extends TestCase
         $resultAtBucket = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: $bucket);
         $resultAtBucketPlus1 = $this->rollout->isEnabled(salt: 'test', subjectId: 'user-1', rolloutPercentage: $bucket + 1);
 
-        $this->assertFalse($resultAtBucket);
-        $this->assertTrue($resultAtBucketPlus1);
+        Assert::false($resultAtBucket);
+        Assert::true($resultAtBucketPlus1);
     }
 
-    #[Test]
     public function differentSaltsGiveDifferentDistribution(): void
     {
         $results = [];
@@ -124,10 +117,9 @@ final class PercentageRolloutTest extends TestCase
             $results[] = $a !== $b;
         }
 
-        $this->assertNotEmpty(array_filter($results));
+        Assert::true(array_filter($results) !== []);
     }
 
-    #[Test]
     public function fiftyPercentDistributesReasonably(): void
     {
         $enabled = 0;
@@ -141,11 +133,10 @@ final class PercentageRolloutTest extends TestCase
 
         $ratio = $enabled / $total;
 
-        $this->assertGreaterThan(0.35, $ratio);
-        $this->assertLessThan(0.65, $ratio);
+        Assert::true($ratio > 0.35);
+        Assert::true($ratio < 0.65);
     }
 
-    #[Test]
     public function lowRolloutRarelyEnabled(): void
     {
         $enabled = 0;
@@ -156,11 +147,10 @@ final class PercentageRolloutTest extends TestCase
             }
         }
 
-        $this->assertLessThan(30, $enabled);
-        $this->assertGreaterThan(0, $enabled);
+        Assert::true($enabled < 30);
+        Assert::true($enabled > 0);
     }
 
-    #[Test]
     public function highRolloutMostlyEnabled(): void
     {
         $enabled = 0;
@@ -171,7 +161,7 @@ final class PercentageRolloutTest extends TestCase
             }
         }
 
-        $this->assertGreaterThan(970, $enabled);
-        $this->assertLessThan(1000, $enabled);
+        Assert::true($enabled > 970);
+        Assert::true($enabled < 1000);
     }
 }

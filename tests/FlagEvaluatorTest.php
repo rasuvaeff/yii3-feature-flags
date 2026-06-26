@@ -4,26 +4,27 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\EvaluationReason;
 use Rasuvaeff\Yii3FeatureFlags\Flag;
 use Rasuvaeff\Yii3FeatureFlags\FlagContext;
 use Rasuvaeff\Yii3FeatureFlags\FlagEvaluator;
+use Testo\Assert;
+use Testo\Codecov\Covers;
+use Testo\Lifecycle\BeforeTest;
+use Testo\Test;
 
-#[CoversClass(FlagEvaluator::class)]
-final class FlagEvaluatorTest extends TestCase
+#[Test]
+#[Covers(FlagEvaluator::class)]
+final class FlagEvaluatorTest
 {
     private FlagEvaluator $evaluator;
 
-    #[\Override]
-    protected function setUp(): void
+    #[BeforeTest]
+    public function setUp(): void
     {
         $this->evaluator = new FlagEvaluator();
     }
 
-    #[Test]
     public function killSwitchOverridesEverything(): void
     {
         $flag = new Flag(
@@ -36,11 +37,10 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::KillSwitch, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::KillSwitch);
     }
 
-    #[Test]
     public function disabledFlagReturnsDisabledReason(): void
     {
         $flag = new Flag(name: 'my-flag', enabled: false);
@@ -48,11 +48,10 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::Disabled, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Disabled);
     }
 
-    #[Test]
     public function enabledFlagWithNoContextReturnsTrue(): void
     {
         $flag = new Flag(name: 'my-flag', enabled: true, rollout: 100);
@@ -60,11 +59,10 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertTrue($result->isEnabled());
-        $this->assertSame(EvaluationReason::Enabled, $result->getReason());
+        Assert::true($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Enabled);
     }
 
-    #[Test]
     public function environmentMismatchExcludes(): void
     {
         $flag = new Flag(
@@ -77,11 +75,10 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::EnvironmentExcluded, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::EnvironmentExcluded);
     }
 
-    #[Test]
     public function environmentMatchIncludes(): void
     {
         $flag = new Flag(
@@ -94,11 +91,10 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertTrue($result->isEnabled());
-        $this->assertSame(EvaluationReason::Enabled, $result->getReason());
+        Assert::true($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Enabled);
     }
 
-    #[Test]
     public function environmentRestrictionDoesNotApplyWithoutContextEnvironment(): void
     {
         $flag = new Flag(
@@ -111,11 +107,10 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertTrue($result->isEnabled());
-        $this->assertNotSame(EvaluationReason::EnvironmentExcluded, $result->getReason());
+        Assert::true($result->isEnabled());
+        Assert::notSame($result->getReason(), EvaluationReason::EnvironmentExcluded);
     }
 
-    #[Test]
     public function noEnvironmentRestrictionPasses(): void
     {
         $flag = new Flag(name: 'my-flag', enabled: true, rollout: 100, environments: []);
@@ -123,10 +118,9 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertTrue($result->isEnabled());
+        Assert::true($result->isEnabled());
     }
 
-    #[Test]
     public function rolloutWithUserContext(): void
     {
         $flag = new Flag(name: 'my-flag', enabled: true, rollout: 0);
@@ -134,11 +128,10 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::RolloutExcluded, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::RolloutExcluded);
     }
 
-    #[Test]
     public function rolloutWithTenantContext(): void
     {
         $flag = new Flag(name: 'my-flag', enabled: true, rollout: 100);
@@ -146,10 +139,9 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertTrue($result->isEnabled());
+        Assert::true($result->isEnabled());
     }
 
-    #[Test]
     public function userContextTakesPriorityOverTenant(): void
     {
         $flag = new Flag(name: 'my-flag', enabled: true, rollout: 0);
@@ -157,11 +149,10 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::RolloutExcluded, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::RolloutExcluded);
     }
 
-    #[Test]
     public function tenantOnlyContextUsesTenantForRollout(): void
     {
         $flag = new Flag(name: 'my-flag', enabled: true, rollout: 100);
@@ -169,10 +160,9 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertTrue($result->isEnabled());
+        Assert::true($result->isEnabled());
     }
 
-    #[Test]
     public function contextWithBothUsesUserIdNotTenantId(): void
     {
         $flag = new Flag(name: 'my-flag', enabled: true, salt: 'priority-test', rollout: 50);
@@ -184,11 +174,10 @@ final class FlagEvaluatorTest extends TestCase
         $resultUserOnly = $this->evaluator->evaluate(flag: $flag, context: $contextWithUserOnly);
         $resultTenantOnly = $this->evaluator->evaluate(flag: $flag, context: $contextWithTenantOnly);
 
-        $this->assertSame($resultBoth->isEnabled(), $resultUserOnly->isEnabled());
-        $this->assertNotSame($resultUserOnly->isEnabled(), $resultTenantOnly->isEnabled());
+        Assert::same($resultBoth->isEnabled(), $resultUserOnly->isEnabled());
+        Assert::notSame($resultUserOnly->isEnabled(), $resultTenantOnly->isEnabled());
     }
 
-    #[Test]
     public function enabledReasonWhenSubjectIdIsNull(): void
     {
         $flag = new Flag(name: 'my-flag', enabled: true, rollout: 0);
@@ -196,11 +185,10 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertTrue($result->isEnabled());
-        $this->assertSame(EvaluationReason::Enabled, $result->getReason());
+        Assert::true($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Enabled);
     }
 
-    #[Test]
     public function enabledReasonWithEnvironmentButNoContextEnvironment(): void
     {
         $flag = new Flag(
@@ -213,6 +201,6 @@ final class FlagEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        $this->assertSame(EvaluationReason::Enabled, $result->getReason());
+        Assert::same($result->getReason(), EvaluationReason::Enabled);
     }
 }

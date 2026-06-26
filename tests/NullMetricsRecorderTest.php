@@ -4,47 +4,45 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\EvaluationReason;
 use Rasuvaeff\Yii3FeatureFlags\EvaluationResult;
 use Rasuvaeff\Yii3FeatureFlags\MetricsRecorder;
 use Rasuvaeff\Yii3FeatureFlags\NullMetricsRecorder;
+use Testo\Assert;
+use Testo\Codecov\Covers;
+use Testo\Test;
 
-#[CoversClass(NullMetricsRecorder::class)]
-final class NullMetricsRecorderTest extends TestCase
+#[Test]
+#[Covers(NullMetricsRecorder::class)]
+final class NullMetricsRecorderTest
 {
-    #[Test]
     public function implementsMetricsRecorder(): void
     {
         $recorder = new NullMetricsRecorder();
 
-        $this->assertInstanceOf(MetricsRecorder::class, $recorder);
+        Assert::instanceOf($recorder, MetricsRecorder::class);
     }
 
-    #[Test]
     public function recordEvaluationDoesNotThrow(): void
     {
         $recorder = new NullMetricsRecorder();
 
-        $this->expectNotToPerformAssertions();
-
         $recorder->recordEvaluation(
             result: EvaluationResult::forced(flagName: 'flag', value: false),
         );
+
+        Assert::true(true);
     }
 
-    #[Test]
     public function recordEvaluationAcceptsAnyReason(): void
     {
         $recorder = new NullMetricsRecorder();
-
-        $this->expectNotToPerformAssertions();
 
         foreach (EvaluationReason::cases() as $reason) {
             $result = EvaluationResult::disabled(flagName: 'flag');
             $recorder->recordEvaluation(result: $result);
         }
+
+        Assert::true(true);
     }
 }
