@@ -7,19 +7,14 @@
         "text": "php://stderr",
         "summary": "build/infection-summary.log"
     },
-    "phpUnit": {
-        "configDir": "."
-    },
     "testFramework": "testo",
-    // 97, not 100: three equivalent mutants remain. No ignores.
-    // - FeatureFlags::__construct Coalesce on ?FlagEvaluator: the injected
-    //   evaluator is behaviorally identical to the default (FlagEvaluator is
-    //   final and PercentageRollout is final/stateless), so the swap is
-    //   unobservable.
-    // - PercentageRollout::isEnabled === 0 / === 100 guards: pure short-circuits;
-    //   the hash path yields bucket<0 (always false) / bucket<100 (always true)
-    //   at the boundaries, producing the same result.
-    "minMsi": 97,
+    // 5 equivalent mutants — no ignores.
+    // - FeatureFlags::__construct Coalesce on ?FlagEvaluator: FlagEvaluator is
+    //   final and stateless, so injected vs fresh instances are unobservable.
+    // - PercentageRollout::isEnabled 0% / 100% guards (Decrement, Increment,
+    //   2×ReturnRemoval): hash path at boundaries yields always-false / always-true,
+    //   producing identical results to the early return.
+    "minMsi": 94,
     "mutators": {
         "@default": true
     }
