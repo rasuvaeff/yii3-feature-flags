@@ -10,6 +10,7 @@
     "phpUnit": {
         "configDir": "."
     },
+    "testFramework": "testo",
     // 97, not 100: three equivalent mutants remain. No ignores.
     // - FeatureFlags::__construct Coalesce on ?FlagEvaluator: the injected
     //   evaluator is behaviorally identical to the default (FlagEvaluator is
