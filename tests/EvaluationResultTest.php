@@ -4,86 +4,79 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\EvaluationReason;
 use Rasuvaeff\Yii3FeatureFlags\EvaluationResult;
+use Testo\Assert;
+use Testo\Codecov\Covers;
+use Testo\Test;
 
-#[CoversClass(EvaluationResult::class)]
-final class EvaluationResultTest extends TestCase
+#[Test]
+#[Covers(EvaluationResult::class)]
+final class EvaluationResultTest
 {
-    #[Test]
     public function enabledFactory(): void
     {
         $result = EvaluationResult::enabled(flagName: 'my-flag');
 
-        $this->assertSame('my-flag', $result->getFlagName());
-        $this->assertTrue($result->isEnabled());
-        $this->assertSame(EvaluationReason::Enabled, $result->getReason());
+        Assert::same($result->getFlagName(), 'my-flag');
+        Assert::true($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Enabled);
     }
 
-    #[Test]
     public function disabledFactory(): void
     {
         $result = EvaluationResult::disabled(flagName: 'my-flag');
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::Disabled, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Disabled);
     }
 
-    #[Test]
     public function killSwitchFactory(): void
     {
         $result = EvaluationResult::killSwitch(flagName: 'my-flag');
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::KillSwitch, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::KillSwitch);
     }
 
-    #[Test]
     public function rolloutExcludedFactory(): void
     {
         $result = EvaluationResult::rolloutExcluded(flagName: 'my-flag');
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::RolloutExcluded, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::RolloutExcluded);
     }
 
-    #[Test]
     public function environmentExcludedFactory(): void
     {
         $result = EvaluationResult::environmentExcluded(flagName: 'my-flag');
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::EnvironmentExcluded, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::EnvironmentExcluded);
     }
 
-    #[Test]
     public function forcedFactoryWithTrue(): void
     {
         $result = EvaluationResult::forced(flagName: 'my-flag', value: true);
 
-        $this->assertTrue($result->isEnabled());
-        $this->assertSame(EvaluationReason::Forced, $result->getReason());
+        Assert::true($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Forced);
     }
 
-    #[Test]
     public function forcedFactoryWithFalse(): void
     {
         $result = EvaluationResult::forced(flagName: 'my-flag', value: false);
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::Forced, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Forced);
     }
 
-    #[Test]
     public function unknownFactory(): void
     {
         $result = EvaluationResult::unknown(flagName: 'missing');
 
-        $this->assertSame('missing', $result->getFlagName());
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::Unknown, $result->getReason());
+        Assert::same($result->getFlagName(), 'missing');
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Unknown);
     }
 }

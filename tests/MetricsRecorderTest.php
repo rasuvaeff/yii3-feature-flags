@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversNothing;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\EvaluationResult;
 use Rasuvaeff\Yii3FeatureFlags\MetricsRecorder;
+use Testo\Assert;
+use Testo\Codecov\CoversNothing;
+use Testo\Test;
 
+#[Test]
 #[CoversNothing]
-final class MetricsRecorderTest extends TestCase
+final class MetricsRecorderTest
 {
-    #[Test]
     public function anonymousImplementationReceivesResult(): void
     {
         $spy = new class implements MetricsRecorder {
@@ -30,6 +30,6 @@ final class MetricsRecorderTest extends TestCase
 
         $spy->recordEvaluation(result: $result);
 
-        $this->assertSame($result, $spy->received);
+        Assert::same($result, $spy->received);
     }
 }

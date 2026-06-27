@@ -4,20 +4,23 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\ConfigFlagProvider;
 use Rasuvaeff\Yii3FeatureFlags\Exception\UnknownFlagException;
 use Rasuvaeff\Yii3FeatureFlags\FlagRegistry;
+use Testo\Assert;
+use Testo\Codecov\Covers;
+use Testo\Expect;
+use Testo\Lifecycle\BeforeTest;
+use Testo\Test;
 
-#[CoversClass(FlagRegistry::class)]
-final class FlagRegistryTest extends TestCase
+#[Test]
+#[Covers(FlagRegistry::class)]
+final class FlagRegistryTest
 {
     private FlagRegistry $registry;
 
-    #[\Override]
-    protected function setUp(): void
+    #[BeforeTest]
+    public function setUp(): void
     {
         $provider = new ConfigFlagProvider(flags: [
             'flag-a' => ['enabled' => true],
@@ -27,41 +30,36 @@ final class FlagRegistryTest extends TestCase
         $this->registry = new FlagRegistry(provider: $provider);
     }
 
-    #[Test]
     public function hasReturnsTrueForExistingFlag(): void
     {
-        $this->assertTrue($this->registry->has('flag-a'));
+        Assert::true($this->registry->has('flag-a'));
     }
 
-    #[Test]
     public function hasReturnsFalseForMissingFlag(): void
     {
-        $this->assertFalse($this->registry->has('unknown'));
+        Assert::false($this->registry->has('unknown'));
     }
 
-    #[Test]
     public function getReturnsFlagByName(): void
     {
         $flag = $this->registry->get('flag-a');
 
-        $this->assertSame('flag-a', $flag->name);
+        Assert::same($flag->name, 'flag-a');
     }
 
-    #[Test]
     public function getThrowsForUnknownFlag(): void
     {
-        $this->expectException(UnknownFlagException::class);
+        Expect::exception(UnknownFlagException::class);
 
         $this->registry->get('unknown');
     }
 
-    #[Test]
     public function allReturnsAllFlags(): void
     {
         $all = $this->registry->all();
 
-        $this->assertCount(2, $all);
-        $this->assertArrayHasKey('flag-a', $all);
-        $this->assertArrayHasKey('flag-b', $all);
+        Assert::count($all, 2);
+        Assert::array($all)->hasKeys('flag-a');
+        Assert::array($all)->hasKeys('flag-b');
     }
 }

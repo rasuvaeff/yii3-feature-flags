@@ -4,28 +4,27 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\Flag;
 use Rasuvaeff\Yii3FeatureFlags\FlagConfig;
+use Testo\Assert;
+use Testo\Codecov\Covers;
+use Testo\Test;
 
-#[CoversClass(FlagConfig::class)]
-final class FlagConfigTest extends TestCase
+#[Test]
+#[Covers(FlagConfig::class)]
+final class FlagConfigTest
 {
-    #[Test]
     public function constructorAppliesDefaults(): void
     {
         $config = new FlagConfig();
 
-        $this->assertTrue($config->enabled);
-        $this->assertSame('', $config->salt);
-        $this->assertSame(100, $config->rollout);
-        $this->assertFalse($config->killSwitch);
-        $this->assertSame([], $config->environments);
+        Assert::true($config->enabled);
+        Assert::same($config->salt, '');
+        Assert::same($config->rollout, 100);
+        Assert::false($config->killSwitch);
+        Assert::same($config->environments, []);
     }
 
-    #[Test]
     public function convertsToFlag(): void
     {
         $config = new FlagConfig(
@@ -38,12 +37,12 @@ final class FlagConfigTest extends TestCase
 
         $flag = $config->toFlag(name: 'new-checkout');
 
-        $this->assertInstanceOf(Flag::class, $flag);
-        $this->assertSame('new-checkout', $flag->name);
-        $this->assertFalse($flag->enabled);
-        $this->assertSame('checkout-v1', $flag->salt);
-        $this->assertSame(25, $flag->rollout);
-        $this->assertTrue($flag->killSwitch);
-        $this->assertSame(['production'], $flag->environments);
+        Assert::instanceOf($flag, Flag::class);
+        Assert::same($flag->name, 'new-checkout');
+        Assert::false($flag->enabled);
+        Assert::same($flag->salt, 'checkout-v1');
+        Assert::same($flag->rollout, 25);
+        Assert::true($flag->killSwitch);
+        Assert::same($flag->environments, ['production']);
     }
 }

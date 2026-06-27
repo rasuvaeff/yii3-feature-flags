@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\ConfigFlagProvider;
 use Rasuvaeff\Yii3FeatureFlags\EvaluationReason;
 use Rasuvaeff\Yii3FeatureFlags\EvaluationResult;
@@ -15,14 +12,20 @@ use Rasuvaeff\Yii3FeatureFlags\FeatureFlags;
 use Rasuvaeff\Yii3FeatureFlags\FlagContext;
 use Rasuvaeff\Yii3FeatureFlags\FlagEvaluator;
 use Rasuvaeff\Yii3FeatureFlags\MetricsRecorder;
+use Testo\Assert;
+use Testo\Codecov\Covers;
+use Testo\Expect;
+use Testo\Lifecycle\BeforeTest;
+use Testo\Test;
 
-#[CoversClass(FeatureFlags::class)]
-final class FeatureFlagsTest extends TestCase
+#[Test]
+#[Covers(FeatureFlags::class)]
+final class FeatureFlagsTest
 {
     private FeatureFlags $featureFlags;
 
-    #[\Override]
-    protected function setUp(): void
+    #[BeforeTest]
+    public function setUp(): void
     {
         $provider = new ConfigFlagProvider(flags: [
             'enabled-flag' => [
@@ -52,39 +55,34 @@ final class FeatureFlagsTest extends TestCase
         $this->featureFlags = new FeatureFlags(provider: $provider);
     }
 
-    #[Test]
     public function isEnabledReturnsTrueForEnabledFlag(): void
     {
-        $this->assertTrue(
+        Assert::true(
             $this->featureFlags->isEnabled(flag: 'enabled-flag'),
         );
     }
 
-    #[Test]
     public function isEnabledReturnsFalseForDisabledFlag(): void
     {
-        $this->assertFalse(
+        Assert::false(
             $this->featureFlags->isEnabled(flag: 'disabled-flag'),
         );
     }
 
-    #[Test]
     public function isEnabledReturnsFalseForKillSwitched(): void
     {
-        $this->assertFalse(
+        Assert::false(
             $this->featureFlags->isEnabled(flag: 'kill-switched'),
         );
     }
 
-    #[Test]
     public function isEnabledReturnsFalseForUnknownFlagInNonStrictMode(): void
     {
-        $this->assertFalse(
+        Assert::false(
             $this->featureFlags->isEnabled(flag: 'unknown'),
         );
     }
 
-    #[Test]
     public function isEnabledThrowsForUnknownFlagInStrictMode(): void
     {
         $featureFlags = new FeatureFlags(
@@ -92,54 +90,48 @@ final class FeatureFlagsTest extends TestCase
             strictMode: true,
         );
 
-        $this->expectException(UnknownFlagException::class);
+        Expect::exception(UnknownFlagException::class);
 
         $featureFlags->isEnabled(flag: 'unknown');
     }
 
-    #[Test]
     public function isDisabledReturnsOppositeOfIsEnabled(): void
     {
-        $this->assertTrue(
+        Assert::true(
             $this->featureFlags->isDisabled(flag: 'disabled-flag'),
         );
-        $this->assertFalse(
+        Assert::false(
             $this->featureFlags->isDisabled(flag: 'enabled-flag'),
         );
     }
 
-    #[Test]
     public function hasReturnsTrueForExistingFlag(): void
     {
-        $this->assertTrue($this->featureFlags->has('enabled-flag'));
+        Assert::true($this->featureFlags->has('enabled-flag'));
     }
 
-    #[Test]
     public function hasReturnsFalseForUnknownFlag(): void
     {
-        $this->assertFalse($this->featureFlags->has('unknown'));
+        Assert::false($this->featureFlags->has('unknown'));
     }
 
-    #[Test]
     public function evaluateReturnsResultForKnownFlag(): void
     {
         $result = $this->featureFlags->evaluate(flag: 'kill-switched');
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::KillSwitch, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::KillSwitch);
     }
 
-    #[Test]
     public function evaluateReturnsUnknownReasonForUnknownFlagInNonStrictMode(): void
     {
         $result = $this->featureFlags->evaluate(flag: 'unknown');
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::Unknown, $result->getReason());
-        $this->assertSame('unknown', $result->getFlagName());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Unknown);
+        Assert::same($result->getFlagName(), 'unknown');
     }
 
-    #[Test]
     public function evaluateThrowsForUnknownFlagInStrictMode(): void
     {
         $featureFlags = new FeatureFlags(
@@ -147,33 +139,30 @@ final class FeatureFlagsTest extends TestCase
             strictMode: true,
         );
 
-        $this->expectException(UnknownFlagException::class);
+        Expect::exception(UnknownFlagException::class);
 
         $featureFlags->evaluate(flag: 'unknown');
     }
 
-    #[Test]
     public function environmentTargetingWorksWithContext(): void
     {
         $context = FlagContext::forEnvironment(environment: 'production');
 
-        $this->assertTrue(
+        Assert::true(
             $this->featureFlags->isEnabled(flag: 'env-flag', context: $context),
         );
     }
 
-    #[Test]
     public function environmentTargetingExcludesMismatch(): void
     {
         $context = FlagContext::forEnvironment(environment: 'staging');
 
         $result = $this->featureFlags->evaluate(flag: 'env-flag', context: $context);
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::EnvironmentExcluded, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::EnvironmentExcluded);
     }
 
-    #[Test]
     public function rolloutWorksWithUserContext(): void
     {
         $result = $this->featureFlags->evaluate(
@@ -181,42 +170,38 @@ final class FeatureFlagsTest extends TestCase
             context: FlagContext::forUser(userId: 'user-42'),
         );
 
-        $this->assertSame('rollout-flag', $result->getFlagName());
+        Assert::same($result->getFlagName(), 'rollout-flag');
     }
 
-    #[Test]
     public function forcedValueOverridesRegularEvaluationForExistingFlag(): void
     {
         $context = FlagContext::empty()->withForcedFlag(flag: 'disabled-flag', enabled: true);
 
         $result = $this->featureFlags->evaluate(flag: 'disabled-flag', context: $context);
 
-        $this->assertTrue($result->isEnabled());
-        $this->assertSame(EvaluationReason::Forced, $result->getReason());
+        Assert::true($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::Forced);
     }
 
-    #[Test]
     public function forcedValueDoesNotOverrideKillSwitch(): void
     {
         $context = FlagContext::empty()->withForcedFlag(flag: 'kill-switched', enabled: true);
 
         $result = $this->featureFlags->evaluate(flag: 'kill-switched', context: $context);
 
-        $this->assertFalse($result->isEnabled());
-        $this->assertSame(EvaluationReason::KillSwitch, $result->getReason());
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::KillSwitch);
     }
 
-    #[Test]
     public function forcedValueIsIgnoredForUnknownFlag(): void
     {
         $context = FlagContext::empty()->withForcedFlag(flag: 'unknown', enabled: true);
 
-        $this->assertFalse(
+        Assert::false(
             $this->featureFlags->isEnabled(flag: 'unknown', context: $context),
         );
     }
 
-    #[Test]
     public function customEvaluatorIsUsedWhenProvided(): void
     {
         $customEvaluator = new FlagEvaluator();
@@ -228,26 +213,23 @@ final class FeatureFlagsTest extends TestCase
             evaluator: $customEvaluator,
         );
 
-        $this->assertTrue($featureFlags->isEnabled(flag: 'test'));
+        Assert::true($featureFlags->isEnabled(flag: 'test'));
     }
 
-    #[Test]
     public function evaluateWithoutContextUsesEmptyContext(): void
     {
         $result = $this->featureFlags->evaluate(flag: 'enabled-flag');
 
-        $this->assertTrue($result->isEnabled());
+        Assert::true($result->isEnabled());
     }
 
-    #[Test]
     public function evaluateWithExplicitNullContextUsesEmptyContext(): void
     {
         $result = $this->featureFlags->evaluate(flag: 'enabled-flag');
 
-        $this->assertTrue($result->isEnabled());
+        Assert::true($result->isEnabled());
     }
 
-    #[Test]
     public function recorderIsCalledExactlyOncePerEvaluate(): void
     {
         $spy = new class implements MetricsRecorder {
@@ -273,12 +255,11 @@ final class FeatureFlagsTest extends TestCase
         $featureFlags->evaluate(flag: 'flag');
         $featureFlags->isEnabled(flag: 'flag');
 
-        $this->assertSame(2, $spy->calls);
-        $this->assertNotNull($spy->last);
-        $this->assertSame('flag', $spy->last->getFlagName());
+        Assert::same($spy->calls, 2);
+        Assert::notNull($spy->last);
+        Assert::same($spy->last->getFlagName(), 'flag');
     }
 
-    #[Test]
     public function recorderIsCalledForUnknownFlagPath(): void
     {
         $spy = new class implements MetricsRecorder {
@@ -301,12 +282,11 @@ final class FeatureFlagsTest extends TestCase
 
         $result = $featureFlags->evaluate(flag: 'missing');
 
-        $this->assertSame(1, $spy->calls);
-        $this->assertSame(EvaluationReason::Unknown, $spy->last->getReason());
-        $this->assertSame($result, $spy->last);
+        Assert::same($spy->calls, 1);
+        Assert::same($spy->last->getReason(), EvaluationReason::Unknown);
+        Assert::same($result, $spy->last);
     }
 
-    #[Test]
     public function recorderIsCalledForForcedValuePath(): void
     {
         $spy = new class implements MetricsRecorder {
@@ -332,12 +312,11 @@ final class FeatureFlagsTest extends TestCase
         $context = FlagContext::empty()->withForcedFlag(flag: 'flag', enabled: true);
         $result = $featureFlags->evaluate(flag: 'flag', context: $context);
 
-        $this->assertSame(1, $spy->calls);
-        $this->assertSame(EvaluationReason::Forced, $spy->last->getReason());
-        $this->assertSame($result, $spy->last);
+        Assert::same($spy->calls, 1);
+        Assert::same($spy->last->getReason(), EvaluationReason::Forced);
+        Assert::same($result, $spy->last);
     }
 
-    #[Test]
     public function recorderIsNotCalledWhenStrictModeThrows(): void
     {
         $spy = new class implements MetricsRecorder {
@@ -361,10 +340,9 @@ final class FeatureFlagsTest extends TestCase
         } catch (UnknownFlagException) {
         }
 
-        $this->assertSame(0, $spy->calls);
+        Assert::same($spy->calls, 0);
     }
 
-    #[Test]
     public function recorderDoesNotChangeResult(): void
     {
         $result = EvaluationResult::enabled(flagName: 'flag');
@@ -384,12 +362,11 @@ final class FeatureFlagsTest extends TestCase
 
         $evaluated = $featureFlags->evaluate(flag: 'flag');
 
-        $this->assertSame($result->getFlagName(), $evaluated->getFlagName());
-        $this->assertSame($result->isEnabled(), $evaluated->isEnabled());
-        $this->assertSame($result->getReason(), $evaluated->getReason());
+        Assert::same($evaluated->getFlagName(), $result->getFlagName());
+        Assert::same($evaluated->isEnabled(), $result->isEnabled());
+        Assert::same($evaluated->getReason(), $result->getReason());
     }
 
-    #[Test]
     public function defaultsToNullMetricsRecorderWhenNoneProvided(): void
     {
         $featureFlags = new FeatureFlags(
@@ -398,6 +375,6 @@ final class FeatureFlagsTest extends TestCase
             ]),
         );
 
-        $this->assertTrue($featureFlags->isEnabled(flag: 'flag'));
+        Assert::true($featureFlags->isEnabled(flag: 'flag'));
     }
 }

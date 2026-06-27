@@ -4,46 +4,44 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Rasuvaeff\Yii3FeatureFlags\Exception\InvalidFlagNameException;
 use Rasuvaeff\Yii3FeatureFlags\Flag;
+use Testo\Assert;
+use Testo\Codecov\Covers;
+use Testo\Data\DataProvider;
+use Testo\Expect;
+use Testo\Test;
 
-#[CoversClass(Flag::class)]
-final class FlagTest extends TestCase
+#[Test]
+#[Covers(Flag::class)]
+final class FlagTest
 {
-    #[Test]
     public function createsWithDefaults(): void
     {
         $flag = new Flag(name: 'my-flag');
 
-        $this->assertSame('my-flag', $flag->name);
-        $this->assertTrue($flag->enabled);
-        $this->assertSame('my-flag', $flag->salt);
-        $this->assertSame(100, $flag->rollout);
-        $this->assertFalse($flag->killSwitch);
-        $this->assertSame([], $flag->environments);
+        Assert::same($flag->name, 'my-flag');
+        Assert::true($flag->enabled);
+        Assert::same($flag->salt, 'my-flag');
+        Assert::same($flag->rollout, 100);
+        Assert::false($flag->killSwitch);
+        Assert::same($flag->environments, []);
     }
 
-    #[Test]
     public function createsWithCustomSalt(): void
     {
         $flag = new Flag(name: 'my-flag', salt: 'custom-salt');
 
-        $this->assertSame('custom-salt', $flag->salt);
+        Assert::same($flag->salt, 'custom-salt');
     }
 
-    #[Test]
     public function usesNameAsSaltWhenEmpty(): void
     {
         $flag = new Flag(name: 'my-flag', salt: '');
 
-        $this->assertSame('my-flag', $flag->salt);
+        Assert::same($flag->salt, 'my-flag');
     }
 
-    #[Test]
     public function createsWithAllParameters(): void
     {
         $flag = new Flag(
@@ -55,105 +53,88 @@ final class FlagTest extends TestCase
             environments: ['production', 'staging'],
         );
 
-        $this->assertSame('new-checkout', $flag->name);
-        $this->assertFalse($flag->enabled);
-        $this->assertSame('checkout-v1', $flag->salt);
-        $this->assertSame(25, $flag->rollout);
-        $this->assertTrue($flag->killSwitch);
-        $this->assertSame(['production', 'staging'], $flag->environments);
+        Assert::same($flag->name, 'new-checkout');
+        Assert::false($flag->enabled);
+        Assert::same($flag->salt, 'checkout-v1');
+        Assert::same($flag->rollout, 25);
+        Assert::true($flag->killSwitch);
+        Assert::same($flag->environments, ['production', 'staging']);
     }
 
-    #[Test]
     public function throwsOnInvalidName(): void
     {
-        $this->expectException(InvalidFlagNameException::class);
+        Expect::exception(InvalidFlagNameException::class);
 
         new Flag(name: 'INVALID');
     }
 
-    #[Test]
     public function throwsOnInvalidRolloutTooHigh(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        Expect::exception(\InvalidArgumentException::class);
 
         new Flag(name: 'my-flag', rollout: 101);
     }
 
-    #[Test]
     public function throwsOnInvalidRolloutNegative(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        Expect::exception(\InvalidArgumentException::class);
 
         new Flag(name: 'my-flag', rollout: -1);
     }
 
-    #[Test]
     public function rolloutErrorIsPlainInvalidArgumentExceptionNotInvalidFlagNameException(): void
     {
         try {
             new Flag(name: 'my-flag', rollout: 101);
-            $this->fail('Expected exception was not thrown');
+            Assert::fail('Expected exception was not thrown');
         } catch (InvalidFlagNameException) {
-            $this->fail('Rollout validation must not throw InvalidFlagNameException');
+            Assert::fail('Rollout validation must not throw InvalidFlagNameException');
         } catch (\InvalidArgumentException $e) {
-            $this->assertStringContainsString('Rollout percentage must be 0..100', $e->getMessage());
+            Assert::string($e->getMessage())->contains('Rollout percentage must be 0..100');
         }
     }
 
-    #[Test]
     public function acceptsBoundaryRolloutValues(): void
     {
         $zero = new Flag(name: 'my-flag', rollout: 0);
         $hundred = new Flag(name: 'my-flag', rollout: 100);
 
-        $this->assertSame(0, $zero->rollout);
-        $this->assertSame(100, $hundred->rollout);
+        Assert::same($zero->rollout, 0);
+        Assert::same($hundred->rollout, 100);
     }
 
-    /**
-     * @return array<string, array{string}>
-     */
-    public static function validFlagNameProvider(): array
+    public static function validFlagNameProvider(): iterable
     {
-        return [
-            'simple' => ['my-flag'],
-            'with dots' => ['my.flag'],
-            'with underscores' => ['my_flag'],
-            'with numbers' => ['flag123'],
-            'single char' => ['a'],
-            'complex' => ['new.checkout-v2_test'],
-        ];
+        yield 'simple' => ['my-flag'];
+        yield 'with dots' => ['my.flag'];
+        yield 'with underscores' => ['my_flag'];
+        yield 'with numbers' => ['flag123'];
+        yield 'single char' => ['a'];
+        yield 'complex' => ['new.checkout-v2_test'];
     }
 
     #[DataProvider('validFlagNameProvider')]
-    #[Test]
     public function acceptsValidFlagNames(string $name): void
     {
         $flag = new Flag(name: $name);
 
-        $this->assertSame($name, $flag->name);
+        Assert::same($flag->name, $name);
     }
 
-    /**
-     * @return array<string, array{string}>
-     */
-    public static function invalidFlagNameProvider(): array
+    public static function invalidFlagNameProvider(): iterable
     {
-        return [
-            'uppercase' => ['MyFlag'],
-            'starts with number' => ['1flag'],
-            'starts with dash' => ['-flag'],
-            'starts with dot' => ['.flag'],
-            'spaces' => ['my flag'],
-            'empty' => [''],
-        ];
+        yield 'uppercase' => ['MyFlag'];
+        yield 'starts with number' => ['1flag'];
+        yield 'starts with dash' => ['-flag'];
+        yield 'starts with dot' => ['.flag'];
+        yield 'spaces' => ['my flag'];
+        yield 'empty' => [''];
     }
 
     #[DataProvider('invalidFlagNameProvider')]
-    #[Test]
     public function rejectsInvalidFlagNames(string $name): void
     {
-        $this->expectException(InvalidFlagNameException::class);
+        Expect::exception(InvalidFlagNameException::class);
 
         new Flag(name: $name);
     }
