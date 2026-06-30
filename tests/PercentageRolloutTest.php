@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
+use Rasuvaeff\PropertyTesting\ArbitraryInterface;
+use Rasuvaeff\PropertyTesting\Gen;
+use Rasuvaeff\PropertyTesting\Property;
 use Rasuvaeff\Yii3FeatureFlags\PercentageRollout;
 use Testo\Assert;
 use Testo\Codecov\Covers;
@@ -163,5 +166,58 @@ final class PercentageRolloutTest
 
         Assert::true($enabled > 970);
         Assert::true($enabled < 1000);
+    }
+
+    #[Property(runs: 300)]
+    public function zeroPercentIsNeverEnabled(string $salt, string $subjectId): void
+    {
+        Assert::false($this->rollout->isEnabled(salt: $salt, subjectId: $subjectId, rolloutPercentage: 0));
+    }
+
+    /** @return array<string, ArbitraryInterface> */
+    private function zeroPercentIsNeverEnabledGenerators(): array
+    {
+        return [
+            'salt' => Gen::stringAscii(),
+            'subjectId' => Gen::stringAscii(),
+        ];
+    }
+
+    #[Property(runs: 300)]
+    public function hundredPercentIsAlwaysEnabled(string $salt, string $subjectId): void
+    {
+        Assert::true($this->rollout->isEnabled(salt: $salt, subjectId: $subjectId, rolloutPercentage: 100));
+    }
+
+    /** @return array<string, ArbitraryInterface> */
+    private function hundredPercentIsAlwaysEnabledGenerators(): array
+    {
+        return [
+            'salt' => Gen::stringAscii(),
+            'subjectId' => Gen::stringAscii(),
+        ];
+    }
+
+    #[Property(runs: 500)]
+    public function enablementIsMonotonicInPercentage(string $salt, string $subjectId, int $percentage, int $delta): void
+    {
+        $higher = min(100, $percentage + $delta);
+
+        $atLower = $this->rollout->isEnabled(salt: $salt, subjectId: $subjectId, rolloutPercentage: $percentage);
+        $atHigher = $this->rollout->isEnabled(salt: $salt, subjectId: $subjectId, rolloutPercentage: $higher);
+
+        // Enabled at p implies enabled at every p' >= p (the bucket is fixed per subject).
+        Assert::true(!$atLower || $atHigher);
+    }
+
+    /** @return array<string, ArbitraryInterface> */
+    private function enablementIsMonotonicInPercentageGenerators(): array
+    {
+        return [
+            'salt' => Gen::stringAscii(),
+            'subjectId' => Gen::stringAscii(),
+            'percentage' => Gen::intBetween(0, 100),
+            'delta' => Gen::intBetween(0, 100),
+        ];
     }
 }
