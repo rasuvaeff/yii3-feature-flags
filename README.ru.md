@@ -1,5 +1,4 @@
 # rasuvaeff/yii3-feature-flags
-
 [![Stable Version](https://img.shields.io/packagist/v/rasuvaeff/yii3-feature-flags.svg?label=stable)](https://packagist.org/packages/rasuvaeff/yii3-feature-flags)
 [![Total Downloads](https://img.shields.io/packagist/dt/rasuvaeff/yii3-feature-flags.svg)](https://packagist.org/packages/rasuvaeff/yii3-feature-flags)
 [![Build](https://img.shields.io/github/actions/workflow/status/rasuvaeff/yii3-feature-flags/build.yml?branch=master)](https://github.com/rasuvaeff/yii3-feature-flags/actions)
@@ -7,30 +6,22 @@
 [![Psalm Level](https://img.shields.io/badge/Psalm-1-blue.svg)](https://github.com/rasuvaeff/yii3-feature-flags/actions)
 [![PHP](https://img.shields.io/packagist/dependency-v/rasuvaeff/yii3-feature-flags/php)](https://packagist.org/packages/rasuvaeff/yii3-feature-flags)
 [![License](https://img.shields.io/packagist/l/rasuvaeff/yii3-feature-flags.svg)](LICENSE.md)
-[Русская версия](README.ru.md)
+Флаги функций, аварийные переключатели и процентное развертывание для приложений Yii3.
 
-Feature flags, kill switches and percentage rollout for Yii3 applications.
+ Ядро без сохранения состояния — серверные части хранилища представляют собой отдельные пакеты. Детерминированное развертывание через хэш
+ SHA-256. Работает с конфигурационным плагином Yii3 или автономно.
 
-Stateless core — storage backends are separate packages. Deterministic rollout via
-SHA-256 hash. Works with Yii3 config-plugin or standalone.
-
-> Using an AI coding assistant? [llms.txt](llms.txt) has a compact API reference
-> you can give to the LLM to help it work with this package.
-
-## Requirements
-
+ > Используете помощника по программированию с искусственным интеллектом? [llms.txt](llms.txt) содержит компактную ссылку на API
+ >, которую вы можете передать LLM, чтобы помочь ей работать с этим пакетом. @@ЛИНИЯ@@
+## Требования
 - PHP 8.3+
 
-## Installation
-
+## Установка
 ```bash
 composer require rasuvaeff/yii3-feature-flags
 ```
-
-## Usage
-
-### Basic flag check
-
+## Использование
+### Базовая проверка флага
 ```php
 use Rasuvaeff\Yii3FeatureFlags\FeatureFlags;
 use Rasuvaeff\Yii3FeatureFlags\FlagContext;
@@ -42,10 +33,8 @@ if ($featureFlags->isEnabled(
     // New checkout flow.
 }
 ```
-
-### Configuration
-
-In your application config (`config/params.php`):
+### Конфигурация
+В конфигурации вашего приложения (`config/params.php`):
 
 ```php
 return [
@@ -62,19 +51,15 @@ return [
     ],
 ];
 ```
-
-### Configuration options
-
-| Key | Type | Default | Description |
-|---|---|---|---|
-| `enabled` | `bool` | `true` | Master switch for the flag |
-| `salt` | `string` | flag name | Hash salt for deterministic rollout |
-| `rollout` | `int` | `100` | Percentage of subjects to include (0..100) |
-| `killSwitch` | `bool` | `false` | Immediately disable the flag, overrides all rules |
-| `environments` | `list<string>` | `[]` | Restrict to specific environments (empty = all) |
-
-### FlagContext
-
+### Варианты конфигурации
+| Ключ | Тип | По умолчанию | Описание |
+ |---|---|---|---|
+ | `включено` | `бул` | `правда` | Главный выключатель флага |
+ | `соль` | `строка` | имя флага | Хэш-соль для детерминированного развертывания |
+ | `развертывание` | `интервал` | `100` | Процент включенных субъектов (0..100) |
+ | `killSwitch` | `бул` | `ложь` | Немедленно отключить флаг, отменяет все правила |
+ | `окружающая среда` | `список<строка>` | `[]` | Ограничить определенными средами (пусто = все) | @@ЛИНИЯ@@
+### ФлагКонтекст
 ```php
 // By user ID
 $context = FlagContext::forUser(userId: 'user-42');
@@ -89,10 +74,8 @@ $context = FlagContext::forEnvironment(environment: 'production');
 $context = FlagContext::forUser(userId: 'user-42')
     ->withEnvironment(environment: 'production');
 ```
-
-### Forced values
-
-Use forced values for QA/debug overrides on existing flags:
+### Принудительные значения
+Используйте принудительные значения для переопределения контроля качества/отладки существующих флагов:
 
 ```php
 $context = FlagContext::forUser(userId: 'user-42')
@@ -100,13 +83,10 @@ $context = FlagContext::forUser(userId: 'user-42')
 
 $featureFlags->isEnabled(flag: 'new-checkout', context: $context);
 ```
-
-A forced value never re-enables a flag that has its kill switch active — the
-kill switch wins.
-
-### Strict mode
-
-Unknown flags return `false` by default. Enable strict mode to throw instead:
+Принудительное значение никогда повторно не включает флаг, у которого активен переключатель уничтожения — побеждает переключатель уничтожения
+. @@ЛИНИЯ@@
+### Строгий режим
+Неизвестные флаги по умолчанию возвращают false. Вместо этого включите строгий режим:
 
 ```php
 $featureFlags = new FeatureFlags(
@@ -114,10 +94,8 @@ $featureFlags = new FeatureFlags(
     strictMode: true,
 );
 ```
-
-### Evaluation result
-
-Get detailed information about why a flag is enabled or disabled:
+### Результат оценки
+Получите подробную информацию о том, почему флаг включен или отключен:
 
 ```php
 $result = $featureFlags->evaluate(
@@ -129,19 +107,18 @@ $result->isEnabled();      // bool
 $result->getReason();      // EvaluationReason enum
 $result->getFlagName();    // string
 ```
+`EvaluationReason` содержит одну машиночитаемую причину вместо набора перекрывающихся логических значений
+:
 
-`EvaluationReason` carries a single machine-readable reason instead of a set of
-overlapping booleans:
-
-| Case | `enabled` | When |
-|---|---|---|
-| `Enabled` | `true` | Flag on, no targeting/rollout exclusion |
-| `Disabled` | `false` | `enabled: false` on the flag |
-| `KillSwitch` | `false` | `killSwitch: true` overrides everything |
-| `RolloutExcluded` | `false` | Subject outside the rollout bucket |
-| `EnvironmentExcluded` | `false` | Context environment not in the flag's allowlist |
-| `Forced` | caller-set | `FlagContext::withForcedFlag()` overrode the result |
-| `Unknown` | `false` | Flag not registered (non-strict mode) |
+ | Дело | `включено` | Когда |
+ |---|---|---|
+ | `Включено` | `правда` | Пометка включена, таргетинг и исключение внедрения отсутствуют |
+ | `Инвалид` | `ложь` | `включено: false` на флаге |
+ | `KillSwitch` | `ложь` | `killSwitch: true` переопределяет все |
+ | `Развертывание исключено` | `ложь` | Тема за пределами сегмента развертывания |
+ | `EnvironmentExcluded` | `ложь` | Контекстная среда отсутствует в белом списке флага |
+ | `Принудительно` | набор абонентов | `FlagContext::withForcedFlag()` переопределил результат |
+ | `Неизвестно` | `ложь` | Флаг не зарегистрирован (нестрогий режим) |
 ```
 
 ### Kill switch
@@ -190,7 +167,7 @@ wired automatically, with no `Duplicate key` config conflict.
 Install a backend and you are done — it binds `FlagProvider` for you:
 
 ```bash
-composer require rasuvaeff/yii3-feature-flags-db
+композитору требуется rasuvaeff/yii3-feature-flags-db
 ```
 
 ### Writable backends
@@ -201,12 +178,12 @@ CRUD (e.g. via an admin UI). `DbFlagProvider` and `CachedFlagProvider` in
 read-only.
 
 ```php
-use Rasuvaeff\Yii3FeatureFlags\Flag;
-use Rasuvaeff\Yii3FeatureFlags\WritableFlagProvider;
+используйте Rasuvaeff\Yii3FeatureFlags\Flag;
+ используйте Rasuvaeff\Yii3FeatureFlags\WritableFlagProvider;
 
-/** @var WritableFlagProvider $provider */
-$provider->save(flag: new Flag(name: 'new-checkout', rollout: 25));
-$provider->remove(name: 'old-checkout');
+ /** @var WritableFlagProvider $provider */
+ $provider->save(flag: new Flag(name: 'new-checkout',rollout: 25));
+ $provider->remove(name: 'old-checkout');
 ```
 
 `save()` is an upsert keyed by the flag `name`. Implementations that decorate a
@@ -220,18 +197,18 @@ argument. After each `evaluate()` call it receives the resulting
 default is `NullMetricsRecorder`, which is a no-op — passing nothing is safe.
 
 ```php
-use Rasuvaeff\Yii3FeatureFlags\FeatureFlags;
-use Rasuvaeff\Yii3FeatureFlags\MetricsRecorder;
+используйте Расуваефф\Yii3FeatureFlags\FeatureFlags;
+ используйте Rasuvaeff\Yii3FeatureFlags\MetricsRecorder;
 
-$recorder = new class implements MetricsRecorder {
-    #[\Override]
-    public function recordEvaluation(\Rasuvaeff\Yii3FeatureFlags\EvaluationResult $result): void
-    {
-        // ship $result->getReason()->value to your metrics backend
-    }
-};
+ $recorder = новый класс реализует MetricsRecorder {
+ #[\Override]
+ public function RecordEvaluation(\Rasuvaeff\Yii3FeatureFlags\EvaluationResult $result): void
+ {
+ // отправляем $result->getReason()->значение в вашу систему метрик
+ }
+ };
 
-$featureFlags = new FeatureFlags(provider: $provider, recorder: $recorder);
+ $featureFlags = new FeatureFlags(поставщик: $provider, рекордер: $recorder);
 ```
 
 Adapter packages (`-psr-logger`, `-prometheus`, …) may be added later; the core
@@ -244,19 +221,19 @@ Without a storage backend, define flags in `params.php` and bind `FlagProvider`
 to `ConfigFlagProvider` once in your application config (`config/common/di/*.php`):
 
 ```php
-use Rasuvaeff\Yii3FeatureFlags\ConfigFlagProvider;
-use Rasuvaeff\Yii3FeatureFlags\FlagProvider;
+используйте Rasuvaeff\Yii3FeatureFlags\ConfigFlagProvider;
+ используйте Rasuvaeff\Yii3FeatureFlags\FlagProvider;
 
-/** @var array $params */
+ /** @var array $params */
 
-return [
-    FlagProvider::class => [
-        'class' => ConfigFlagProvider::class,
-        '__construct()' => [
-            'flags' => $params['rasuvaeff/yii3-feature-flags']['flags'],
-        ],
-    ],
-];
+ return [
+ FlagProvider::class => [
+ 'class' => ConfigFlagProvider::class,
+ '__construct()' => [
+ 'flags' => $params['rasuvaeff/yii3-feature-flags']['flags'],
+ ],
+ ],
+ ];
 ```
 
 Bind `FlagProvider` from a single source — installing two backends (or a backend
@@ -278,14 +255,14 @@ documented public API.
 ## Development
 
 ```bash
-make install     # composer install
-make build       # full gate: validate + cs + psalm + test
-make cs-fix      # fix code style
-make psalm       # static analysis
-make test        # run tests
-make test-coverage  # run coverage
-make mutation       # mutation testing
-make release-check  # build + rector + bc-check + mutation
+make install # установка композитора
+ make build # fullgate: validate + cs + psalm + test
+ make cs-fix # исправить стиль кода
+ make psalm # статический анализ
+ make test # запустить тесты
+ make test-coverage # запустить покрытие
+ makemutation # мутационное тестирование
+ make Release-check # build + rector + bc-check +mutation
 ```
 
 `make test-coverage` and `make mutation` bootstrap `pcov` inside the
