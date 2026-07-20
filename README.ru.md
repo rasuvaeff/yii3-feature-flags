@@ -1,4 +1,5 @@
 # rasuvaeff/yii3-feature-flags
+
 [![Stable Version](https://img.shields.io/packagist/v/rasuvaeff/yii3-feature-flags.svg?label=stable)](https://packagist.org/packages/rasuvaeff/yii3-feature-flags)
 [![Total Downloads](https://img.shields.io/packagist/dt/rasuvaeff/yii3-feature-flags.svg)](https://packagist.org/packages/rasuvaeff/yii3-feature-flags)
 [![Build](https://img.shields.io/github/actions/workflow/status/rasuvaeff/yii3-feature-flags/build.yml?branch=master)](https://github.com/rasuvaeff/yii3-feature-flags/actions)
@@ -6,22 +7,30 @@
 [![Psalm Level](https://img.shields.io/badge/Psalm-1-blue.svg)](https://github.com/rasuvaeff/yii3-feature-flags/actions)
 [![PHP](https://img.shields.io/packagist/dependency-v/rasuvaeff/yii3-feature-flags/php)](https://packagist.org/packages/rasuvaeff/yii3-feature-flags)
 [![License](https://img.shields.io/packagist/l/rasuvaeff/yii3-feature-flags.svg)](LICENSE.md)
-Флаги функций, аварийные переключатели и процентное развертывание для приложений Yii3.
+[English version](README.md)
 
- Ядро без сохранения состояния — серверные части хранилища представляют собой отдельные пакеты. Детерминированное развертывание через хэш
- SHA-256. Работает с конфигурационным плагином Yii3 или автономно.
+Feature flags, kill switches и процентный rollout для приложений Yii3.
 
- > Используете помощника по программированию с искусственным интеллектом? [llms.txt](llms.txt) содержит компактную ссылку на API
- >, которую вы можете передать LLM, чтобы помочь ей работать с этим пакетом. @@ЛИНИЯ@@
+Ядро без состояния — storage-бэкенды вынесены в отдельные пакеты. Детерминированный
+rollout через SHA-256 hash. Работает с Yii3 config-plugin или автономно.
+
+> Используете AI-ассистента для написания кода? В [llms.txt](llms.txt) — компактный
+> API-справочник, который можно передать модели.
+
 ## Требования
+
 - PHP 8.3+
 
 ## Установка
+
 ```bash
 composer require rasuvaeff/yii3-feature-flags
 ```
+
 ## Использование
+
 ### Базовая проверка флага
+
 ```php
 use Rasuvaeff\Yii3FeatureFlags\FeatureFlags;
 use Rasuvaeff\Yii3FeatureFlags\FlagContext;
@@ -33,8 +42,10 @@ if ($featureFlags->isEnabled(
     // New checkout flow.
 }
 ```
+
 ### Конфигурация
-В конфигурации вашего приложения (`config/params.php`):
+
+В конфиге приложения (`config/params.php`):
 
 ```php
 return [
@@ -51,15 +62,19 @@ return [
     ],
 ];
 ```
-### Варианты конфигурации
+
+### Параметры конфигурации
+
 | Ключ | Тип | По умолчанию | Описание |
- |---|---|---|---|
- | `включено` | `бул` | `правда` | Главный выключатель флага |
- | `соль` | `строка` | имя флага | Хэш-соль для детерминированного развертывания |
- | `развертывание` | `интервал` | `100` | Процент включенных субъектов (0..100) |
- | `killSwitch` | `бул` | `ложь` | Немедленно отключить флаг, отменяет все правила |
- | `окружающая среда` | `список<строка>` | `[]` | Ограничить определенными средами (пусто = все) | @@ЛИНИЯ@@
-### ФлагКонтекст
+|---|---|---|---|
+| `enabled` | `bool` | `true` | Главный переключатель флага |
+| `salt` | `string` | имя флага | Hash-salt для детерминированного rollout |
+| `rollout` | `int` | `100` | Процент субъектов (0..100) |
+| `killSwitch` | `bool` | `false` | Немедленно выключает флаг, перекрывает все правила |
+| `environments` | `list<string>` | `[]` | Ограничение окружениями (пусто = все) |
+
+### FlagContext
+
 ```php
 // By user ID
 $context = FlagContext::forUser(userId: 'user-42');
@@ -74,8 +89,10 @@ $context = FlagContext::forEnvironment(environment: 'production');
 $context = FlagContext::forUser(userId: 'user-42')
     ->withEnvironment(environment: 'production');
 ```
-### Принудительные значения
-Используйте принудительные значения для переопределения контроля качества/отладки существующих флагов:
+
+### Форсированные значения
+
+Используйте форсированные значения для QA/debug-переопределений на существующих флагах:
 
 ```php
 $context = FlagContext::forUser(userId: 'user-42')
@@ -83,10 +100,14 @@ $context = FlagContext::forUser(userId: 'user-42')
 
 $featureFlags->isEnabled(flag: 'new-checkout', context: $context);
 ```
-Принудительное значение никогда повторно не включает флаг, у которого активен переключатель уничтожения — побеждает переключатель уничтожения
-. @@ЛИНИЯ@@
+
+Форсированное значение никогда не включает флаг с активным kill switch —
+kill switch имеет приоритет.
+
 ### Строгий режим
-Неизвестные флаги по умолчанию возвращают false. Вместо этого включите строгий режим:
+
+Неизвестные флаги по умолчанию возвращают `false`. Включите строгий режим,
+чтобы вместо этого бросать исключение:
 
 ```php
 $featureFlags = new FeatureFlags(
@@ -94,8 +115,10 @@ $featureFlags = new FeatureFlags(
     strictMode: true,
 );
 ```
-### Результат оценки
-Получите подробную информацию о том, почему флаг включен или отключен:
+
+### Результат вычисления
+
+Получите детальную информацию о том, почему флаг включён или выключен:
 
 ```php
 $result = $featureFlags->evaluate(
@@ -107,167 +130,166 @@ $result->isEnabled();      // bool
 $result->getReason();      // EvaluationReason enum
 $result->getFlagName();    // string
 ```
-`EvaluationReason` содержит одну машиночитаемую причину вместо набора перекрывающихся логических значений
-:
 
- | Дело | `включено` | Когда |
- |---|---|---|
- | `Включено` | `правда` | Пометка включена, таргетинг и исключение внедрения отсутствуют |
- | `Инвалид` | `ложь` | `включено: false` на флаге |
- | `KillSwitch` | `ложь` | `killSwitch: true` переопределяет все |
- | `Развертывание исключено` | `ложь` | Тема за пределами сегмента развертывания |
- | `EnvironmentExcluded` | `ложь` | Контекстная среда отсутствует в белом списке флага |
- | `Принудительно` | набор абонентов | `FlagContext::withForcedFlag()` переопределил результат |
- | `Неизвестно` | `ложь` | Флаг не зарегистрирован (нестрогий режим) |
-```
+`EvaluationReason` несёт одну машиночитаемую причину вместо набора пересекающихся
+булевых значений:
+
+| Случай | `enabled` | Когда |
+|---|---|---|
+| `Enabled` | `true` | Флаг включён, без исключений таргетинга/rollout |
+| `Disabled` | `false` | `enabled: false` на флаге |
+| `KillSwitch` | `false` | `killSwitch: true` перекрывает всё |
+| `RolloutExcluded` | `false` | Субъект вне rollout-бакета |
+| `EnvironmentExcluded` | `false` | Окружение контекста не в allow-list флага |
+| `Forced` | задаётся вызывающим | `FlagContext::withForcedFlag()` переопределило результат |
+| `Unknown` | `false` | Флаг не зарегистрирован (нестрогий режим) |
 
 ### Kill switch
 
-Set `killSwitch: true` in config to immediately disable a flag, overriding all
-targeting, rollout and forced-value rules.
+Установите `killSwitch: true` в конфиге, чтобы немедленно выключить флаг, перекрыв
+все правила таргетинга, rollout и форсированных значений.
 
-### Percentage rollout
+### Процентный rollout
 
-Deterministic assignment using `sha256(salt . ':' . subjectId)`:
+Детерминированное распределение через `sha256(salt . ':' . subjectId)`:
 
-- Same `salt` + `subjectId` always produces the same result.
-- Changing `salt` resets assignment (intentional re-randomization).
-- Changing weights shifts boundaries; some subjects may change variant.
+- Те же `salt` + `subjectId` всегда дают один и тот же результат.
+- Изменение `salt` сбрасывает распределение (намеренная ре-рандомизация).
+- Изменение весов сдвигает границы; некоторые субъекты могут сменить вариант.
 
-## Public API
+## Публичный API
 
-| Class | Description |
+| Класс | Описание |
 |---|---|
-| `FeatureFlags` | Facade service: `isEnabled()`, `isDisabled()`, `evaluate()`, `has()` |
-| `Flag` | Immutable flag value object |
-| `FlagConfig` | Config DTO for programmatic flag definitions |
-| `FlagContext` | Evaluation context (userId, tenantId, environment) |
-| `FlagProvider` | Read-only interface for flag sources |
-| `WritableFlagProvider` | `extends FlagProvider`: adds `save(Flag)`, `remove(string)` |
-| `ConfigFlagProvider` | Provider from PHP config arrays (read-only) |
-| `FlagRegistry` | Named flag lookup |
-| `FlagEvaluator` | Core evaluation logic |
-| `PercentageRollout` | Deterministic percentage assignment |
-| `EvaluationResult` | Detailed evaluation outcome (private constructor; 7 static factories) |
-| `EvaluationReason` | String-backed enum of evaluation outcomes |
-| `MetricsRecorder` | Interface for recording evaluation metrics |
-| `NullMetricsRecorder` | No-op default implementation |
+| `FeatureFlags` | Фасадный сервис: `isEnabled()`, `isDisabled()`, `evaluate()`, `has()` |
+| `Flag` | Иммутабельный value object флага |
+| `FlagConfig` | Config DTO для программных определений флагов |
+| `FlagContext` | Контекст вычисления (userId, tenantId, environment) |
+| `FlagProvider` | Read-only интерфейс для источников флагов |
+| `WritableFlagProvider` | `extends FlagProvider`: добавляет `save(Flag)`, `remove(string)` |
+| `ConfigFlagProvider` | Провайдер из PHP-конфига (read-only) |
+| `FlagRegistry` | Named-lookup флагов |
+| `FlagEvaluator` | Основная логика вычисления |
+| `PercentageRollout` | Детерминированное процентное распределение |
+| `EvaluationResult` | Детальный результат вычисления (private constructor; 7 статических фабрик) |
+| `EvaluationReason` | String-backed enum исходов вычисления |
+| `MetricsRecorder` | Интерфейс записи метрик вычисления |
+| `NullMetricsRecorder` | No-op реализация по умолчанию |
 
-## Storage backends
+## Storage-бэкенды
 
-The core wires only the `FeatureFlags` facade. The `FlagProvider` implementation
-is supplied by **exactly one** provider — a storage backend or, for config-array
-flags, the application. This keeps backends drop-in: install one and it is
-wired automatically, with no `Duplicate key` config conflict.
+Ядро биндит только фасад `FeatureFlags`. Реализация `FlagProvider` поставляется
+**ровно одним** провайдером — storage-бэкендом или, для флагов из конфига,
+приложением. Это делает бэкенды drop-in: установите один — и он привяжется
+автоматически, без конфликта `Duplicate key`.
 
-| Package | Description |
+| Пакет | Описание |
 |---|---|
-| [`rasuvaeff/yii3-feature-flags-db`](https://github.com/rasuvaeff/yii3-feature-flags-db) | Database (yiisoft/db) with PSR-16 caching and migration |
+| [`rasuvaeff/yii3-feature-flags-db`](https://github.com/rasuvaeff/yii3-feature-flags-db) | База данных (yiisoft/db) с PSR-16 кэшем и миграцией |
 
-Install a backend and you are done — it binds `FlagProvider` for you:
+Установите бэкенд — и всё, он биндит `FlagProvider` за вас:
 
 ```bash
-композитору требуется rasuvaeff/yii3-feature-flags-db
+composer require rasuvaeff/yii3-feature-flags-db
 ```
 
-### Writable backends
+### Writable-бэкенды
 
-A backend may implement `WritableFlagProvider` to support programmatic flag
-CRUD (e.g. via an admin UI). `DbFlagProvider` and `CachedFlagProvider` in
-`yii3-feature-flags-db` both implement it; `ConfigFlagProvider` does not — it is
-read-only.
+Бэкенд может реализовывать `WritableFlagProvider` для программного CRUD флагов
+(например, через admin UI). `DbFlagProvider` и `CachedFlagProvider` в
+`yii3-feature-flags-db` оба его реализуют; `ConfigFlagProvider` — нет, он read-only.
 
 ```php
-используйте Rasuvaeff\Yii3FeatureFlags\Flag;
- используйте Rasuvaeff\Yii3FeatureFlags\WritableFlagProvider;
+use Rasuvaeff\Yii3FeatureFlags\Flag;
+use Rasuvaeff\Yii3FeatureFlags\WritableFlagProvider;
 
- /** @var WritableFlagProvider $provider */
- $provider->save(flag: new Flag(name: 'new-checkout',rollout: 25));
- $provider->remove(name: 'old-checkout');
+/** @var WritableFlagProvider $provider */
+$provider->save(flag: new Flag(name: 'new-checkout', rollout: 25));
+$provider->remove(name: 'old-checkout');
 ```
 
-`save()` is an upsert keyed by the flag `name`. Implementations that decorate a
-cache (e.g. `CachedFlagProvider`) invalidate themselves after a successful write.
+`save()` — это upsert с ключом `name`. Реализации, декорирующие кэш (например
+`CachedFlagProvider`), инвалидируют себя после успешной записи.
 
-## Metrics
+## Метрики
 
-`FeatureFlags` accepts an optional `MetricsRecorder` as its last constructor
-argument. After each `evaluate()` call it receives the resulting
-`EvaluationResult` exactly once (never on the throw path in strict mode). The
-default is `NullMetricsRecorder`, which is a no-op — passing nothing is safe.
+`FeatureFlags` принимает опциональный `MetricsRecorder` последним аргументом
+конструктора. После каждого вызова `evaluate()` он получает результирующий
+`EvaluationResult` ровно один раз (никогда на пути броска в строгом режиме). По
+умолчанию — `NullMetricsRecorder`, no-op: ничего не передавать безопасно.
 
 ```php
-используйте Расуваефф\Yii3FeatureFlags\FeatureFlags;
- используйте Rasuvaeff\Yii3FeatureFlags\MetricsRecorder;
+use Rasuvaeff\Yii3FeatureFlags\FeatureFlags;
+use Rasuvaeff\Yii3FeatureFlags\MetricsRecorder;
 
- $recorder = новый класс реализует MetricsRecorder {
- #[\Override]
- public function RecordEvaluation(\Rasuvaeff\Yii3FeatureFlags\EvaluationResult $result): void
- {
- // отправляем $result->getReason()->значение в вашу систему метрик
- }
- };
+$recorder = new class implements MetricsRecorder {
+    #[\Override]
+    public function recordEvaluation(\Rasuvaeff\Yii3FeatureFlags\EvaluationResult $result): void
+    {
+        // ship $result->getReason()->value to your metrics backend
+    }
+};
 
- $featureFlags = new FeatureFlags(поставщик: $provider, рекордер: $recorder);
+$featureFlags = new FeatureFlags(provider: $provider, recorder: $recorder);
 ```
 
-Adapter packages (`-psr-logger`, `-prometheus`, …) may be added later; the core
-**does not** bind `MetricsRecorder` in its `config/di.php`, so installing an
-adapter next to the core will never trigger a `Duplicate key` error.
+Адаптеры (`-psr-logger`, `-prometheus`, …) могут быть добавлены позже; ядро
+**не** биндит `MetricsRecorder` в своём `config/di.php`, поэтому установка
+адаптера рядом с ядром никогда не вызовет ошибку `Duplicate key`.
 
-### Config-only setup
+### Конфигурация без бэкенда
 
-Without a storage backend, define flags in `params.php` and bind `FlagProvider`
-to `ConfigFlagProvider` once in your application config (`config/common/di/*.php`):
+Без storage-бэкенда определите флаги в `params.php` и привяжите `FlagProvider`
+к `ConfigFlagProvider` однажды в конфиге приложения (`config/common/di/*.php`):
 
 ```php
-используйте Rasuvaeff\Yii3FeatureFlags\ConfigFlagProvider;
- используйте Rasuvaeff\Yii3FeatureFlags\FlagProvider;
+use Rasuvaeff\Yii3FeatureFlags\ConfigFlagProvider;
+use Rasuvaeff\Yii3FeatureFlags\FlagProvider;
 
- /** @var array $params */
+/** @var array $params */
 
- return [
- FlagProvider::class => [
- 'class' => ConfigFlagProvider::class,
- '__construct()' => [
- 'flags' => $params['rasuvaeff/yii3-feature-flags']['flags'],
- ],
- ],
- ];
+return [
+    FlagProvider::class => [
+        'class' => ConfigFlagProvider::class,
+        '__construct()' => [
+            'flags' => $params['rasuvaeff/yii3-feature-flags']['flags'],
+        ],
+    ],
+];
 ```
 
-Bind `FlagProvider` from a single source — installing two backends (or a backend
-plus a manual config binding) reintroduces the `Duplicate key` conflict.
+Биндите `FlagProvider` из одного источника — установка двух бэкендов (или бэкенда
+плюс ручной binding в конфиге) вновь приведёт к конфликту `Duplicate key`.
 
-## Security
+## Безопасность
 
-- Flag names validated by regex (`/^[a-z][a-z0-9._-]*$/`).
-- Rollout percentage validated (0..100 range).
-- No user data is logged or stored by the core package.
-- Kill switch provides emergency shutoff capability.
+- Имена флагов валидируются regex'ом (`/^[a-z][a-z0-9._-]*$/`).
+- Процент rollout валидируется (диапазон 0..100).
+- Ядро не логирует и не хранит пользовательские данные.
+- Kill switch обеспечивает возможность аварийного выключения.
 
-## Examples
+## Примеры
 
-See [examples/](examples/) for runnable scripts.
-Examples are expected to execute without fatal errors and stay aligned with the
-documented public API.
+См. [examples/](examples/) — запускаемые скрипты. Ожидается, что примеры
+выполняются без fatal errors и остаются согласованными с документированным
+публичным API.
 
-## Development
+## Разработка
 
 ```bash
-make install # установка композитора
- make build # fullgate: validate + cs + psalm + test
- make cs-fix # исправить стиль кода
- make psalm # статический анализ
- make test # запустить тесты
- make test-coverage # запустить покрытие
- makemutation # мутационное тестирование
- make Release-check # build + rector + bc-check +mutation
+make install     # composer install
+make build       # полный gate: validate + cs + psalm + test
+make cs-fix      # исправить стиль кода
+make psalm       # статический анализ
+make test        # запустить тесты
+make test-coverage  # запуск coverage
+make mutation       # mutation-тестирование
+make release-check  # build + rector + bc-check + mutation
 ```
 
-`make test-coverage` and `make mutation` bootstrap `pcov` inside the
-`composer:2` container because the base image has no coverage driver.
+`make test-coverage` и `make mutation` поднимают `pcov` внутри контейнера
+`composer:2`, потому что в базовом образе нет драйвера покрытия.
 
-## License
+## Лицензия
 
-BSD-3-Clause. See [LICENSE.md](LICENSE.md).
+BSD-3-Clause. См. [LICENSE.md](LICENSE.md).
