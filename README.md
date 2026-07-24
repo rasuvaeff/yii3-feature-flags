@@ -16,6 +16,9 @@ SHA-256 hash. Works with Yii3 config-plugin or standalone.
 
 > Using an AI coding assistant? [llms.txt](llms.txt) has a compact API reference
 > you can give to the LLM to help it work with this package.
+> Projects using the [llm/skills](https://github.com/roxblnfk/skills) Composer
+> plugin also get this package's agent skill synced into `.agents/skills/`
+> automatically on install.
 
 ## Requirements
 

@@ -175,7 +175,7 @@ final class PercentageRolloutTest
     }
 
     /** @return array<string, ArbitraryInterface> */
-    private function zeroPercentIsNeverEnabledGenerators(): array
+    public static function zeroPercentIsNeverEnabledGenerators(): array
     {
         return [
             'salt' => Gen::stringAscii(),
@@ -190,7 +190,7 @@ final class PercentageRolloutTest
     }
 
     /** @return array<string, ArbitraryInterface> */
-    private function hundredPercentIsAlwaysEnabledGenerators(): array
+    public static function hundredPercentIsAlwaysEnabledGenerators(): array
     {
         return [
             'salt' => Gen::stringAscii(),
@@ -211,7 +211,7 @@ final class PercentageRolloutTest
     }
 
     /** @return array<string, ArbitraryInterface> */
-    private function enablementIsMonotonicInPercentageGenerators(): array
+    public static function enablementIsMonotonicInPercentageGenerators(): array
     {
         return [
             'salt' => Gen::stringAscii(),
