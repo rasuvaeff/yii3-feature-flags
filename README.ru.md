@@ -16,6 +16,9 @@ rollout через SHA-256 hash. Работает с Yii3 config-plugin или �
 
 > Используете AI-ассистента для написания кода? В [llms.txt](llms.txt) — компактный
 > API-справочник, который можно передать модели.
+> Проекты с Composer-плагином [llm/skills](https://github.com/roxblnfk/skills)
+> дополнительно получают agent-скилл этого пакета в `.agents/skills/`
+> автоматически при установке.
 
 ## Требования
 
