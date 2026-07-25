@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 — 2026-07-25
+
+- Reject trailing newlines in flag-name validation: anchor `Flag::NAME_PATTERN`
+  with `\z` instead of `$` (PCRE `$` matches before a trailing `\n`, which let
+  `"<name>\n"` pass and become a provider/storage key).
+
 ## 1.1.0 — 2026-07-25
 
 - Ship an AI agent skill (`resources/skills/rasuvaeff-yii3-feature-flags/SKILL.md` +

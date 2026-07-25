@@ -67,7 +67,7 @@ make release-check
 
 - Kill switch always overrides rollout, targeting and forced values.
 - Rollout deterministic: `sha256(salt . ':' . subjectId)`, first 8 hex → bucket % 100.
-- Flag name regex: `/^[a-z][a-z0-9._-]*$/` — failure throws `InvalidFlagNameException`.
+- Flag name regex: `/^[a-z][a-z0-9._-]*\z/` — failure throws `InvalidFlagNameException`.
 - Rollout percentage range: 0..100 inclusive — failure throws plain
   `\InvalidArgumentException` (UI maps form errors by exception type).
 - `EvaluationResult` has a private constructor; build via the 7 static factories.
