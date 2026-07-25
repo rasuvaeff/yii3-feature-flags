@@ -129,6 +129,7 @@ final class FlagTest
         yield 'starts with dot' => ['.flag'];
         yield 'spaces' => ['my flag'];
         yield 'empty' => [''];
+        yield 'trailing newline' => ["my-flag\n"];
     }
 
     #[DataProvider('invalidFlagNameProvider')]

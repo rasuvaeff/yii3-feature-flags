@@ -9,7 +9,7 @@ namespace Rasuvaeff\Yii3FeatureFlags;
  */
 final readonly class Flag
 {
-    private const string NAME_PATTERN = '/^[a-z][a-z0-9._-]*$/';
+    private const string NAME_PATTERN = '/^[a-z][a-z0-9._-]*\z/';
 
     public string $name;
 
