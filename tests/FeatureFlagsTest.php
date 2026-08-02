@@ -20,6 +20,7 @@ use Testo\Test;
 
 #[Test]
 #[Covers(FeatureFlags::class)]
+#[Covers(UnknownFlagException::class)]
 final class FeatureFlagsTest
 {
     private FeatureFlags $featureFlags;
@@ -214,6 +215,21 @@ final class FeatureFlagsTest
         );
 
         Assert::true($featureFlags->isEnabled(flag: 'test'));
+    }
+
+    public function customEvaluatorInstanceIsStoredNotReplaced(): void
+    {
+        $customEvaluator = new FlagEvaluator();
+
+        $featureFlags = new FeatureFlags(
+            provider: new ConfigFlagProvider(flags: []),
+            evaluator: $customEvaluator,
+        );
+
+        $property = new \ReflectionProperty(FeatureFlags::class, 'evaluator');
+        $storedEvaluator = $property->getValue($featureFlags);
+
+        Assert::same($storedEvaluator, $customEvaluator);
     }
 
     public function evaluateWithoutContextUsesEmptyContext(): void

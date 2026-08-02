@@ -15,6 +15,7 @@ use Testo\Test;
 
 #[Test]
 #[Covers(FlagRegistry::class)]
+#[Covers(UnknownFlagException::class)]
 final class FlagRegistryTest
 {
     private FlagRegistry $registry;
