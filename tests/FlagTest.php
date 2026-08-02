@@ -14,6 +14,7 @@ use Testo\Test;
 
 #[Test]
 #[Covers(Flag::class)]
+#[Covers(InvalidFlagNameException::class)]
 final class FlagTest
 {
     public function createsWithDefaults(): void
