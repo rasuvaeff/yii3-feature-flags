@@ -31,7 +31,7 @@ final class NullMetricsRecorderTest
             result: EvaluationResult::forced(flagName: 'flag', value: false),
         );
 
-        Assert::true(true);
+        Assert::true(actual: true);
     }
 
     public function recordEvaluationAcceptsAnyReason(): void
@@ -43,6 +43,6 @@ final class NullMetricsRecorderTest
             $recorder->recordEvaluation(result: $result);
         }
 
-        Assert::true(true);
+        Assert::true(actual: true);
     }
 }

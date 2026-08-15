@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Yii3FeatureFlags\Tests;
 
 use Rasuvaeff\PropertyTesting\ArbitraryInterface;
+use Rasuvaeff\PropertyTesting\Classify;
 use Rasuvaeff\PropertyTesting\Gen;
 use Rasuvaeff\PropertyTesting\Property;
 use Rasuvaeff\Yii3FeatureFlags\PercentageRollout;
@@ -206,8 +207,88 @@ final class PercentageRolloutTest
         $atLower = $this->rollout->isEnabled(salt: $salt, subjectId: $subjectId, rolloutPercentage: $percentage);
         $atHigher = $this->rollout->isEnabled(salt: $salt, subjectId: $subjectId, rolloutPercentage: $higher);
 
+        // An implication is vacuously true whenever its antecedent is false:
+        // every run where the subject is disabled at the lower percentage
+        // asserts nothing at all. The gate is what keeps the runs that carry
+        // the statement from quietly disappearing.
+        Classify::cover($atLower, 'enabled at the lower percentage', 25.0);
+        Classify::cover(!$atLower, 'disabled at the lower percentage', 25.0);
+        Classify::when($delta === 0, 'same percentage twice');
+
         // Enabled at p implies enabled at every p' >= p (the bucket is fixed per subject).
         Assert::true(!$atLower || $atHigher);
+    }
+
+    /**
+     * @return iterable<string, array{string, string, int, int}>
+     */
+    public static function enablementIsMonotonicInPercentageExamples(): iterable
+    {
+        // The ends of the range, where an off-by-one in the bucket comparison
+        // shows up as "0% enables somebody" or "100% leaves somebody out".
+        yield 'zero to full' => ['s', 'subject-1', 0, 100];
+        yield 'full stays full' => ['s', 'subject-1', 100, 0];
+        yield 'no increase at all' => ['s', 'subject-1', 50, 0];
+        yield 'one point up from the middle' => ['s', 'subject-1', 50, 1];
+        yield 'empty salt and subject' => ['', '', 0, 100];
+    }
+
+    #[Property(runs: 300)]
+    public function theSameSubjectAlwaysLandsInTheSameBucket(string $salt, string $subjectId, int $percentage): void
+    {
+        $first = $this->rollout->isEnabled(salt: $salt, subjectId: $subjectId, rolloutPercentage: $percentage);
+        $second = $this->rollout->isEnabled(salt: $salt, subjectId: $subjectId, rolloutPercentage: $percentage);
+
+        Classify::cover($first, 'enabled', 20.0);
+        Classify::cover(!$first, 'disabled', 20.0);
+
+        // A rollout that answered differently on two calls in one request
+        // would flip a user between variants mid-session — the one failure a
+        // percentage rollout must not have.
+        Assert::same($second, $first);
+    }
+
+    /** @return array<string, ArbitraryInterface> */
+    public static function theSameSubjectAlwaysLandsInTheSameBucketGenerators(): array
+    {
+        return [
+            'salt' => Gen::stringAscii(),
+            'subjectId' => Gen::stringAscii(),
+            'percentage' => Gen::intBetween(0, 100),
+        ];
+    }
+
+    #[Property(runs: 300)]
+    public function changingTheSaltIsWhatReshufflesTheBuckets(string $subjectId, int $percentage): void
+    {
+        $underOneSalt = $this->rollout->isEnabled(salt: 'release-a', subjectId: $subjectId, rolloutPercentage: $percentage);
+        $underAnother = $this->rollout->isEnabled(salt: 'release-b', subjectId: $subjectId, rolloutPercentage: $percentage);
+
+        Classify::cover($underOneSalt !== $underAnother, 'the salt moved this subject', 10.0);
+        Classify::when($underOneSalt === $underAnother, 'same side of both rollouts');
+
+        // Not an assertion that the two disagree — for a given subject they
+        // often agree. What must hold is that each salt is internally stable,
+        // so two independent rollouts at the same percentage do not silently
+        // select the identical cohort.
+        Assert::same(
+            $this->rollout->isEnabled(salt: 'release-a', subjectId: $subjectId, rolloutPercentage: $percentage),
+            $underOneSalt,
+        );
+        Assert::same(
+            $this->rollout->isEnabled(salt: 'release-b', subjectId: $subjectId, rolloutPercentage: $percentage),
+            $underAnother,
+        );
+    }
+
+    /** @return array<string, ArbitraryInterface> */
+    public static function changingTheSaltIsWhatReshufflesTheBucketsGenerators(): array
+    {
+        return [
+            'subjectId' => Gen::stringAscii(),
+            // Away from the ends, where every subject agrees by definition.
+            'percentage' => Gen::intBetween(10, 90),
+        ];
     }
 
     /** @return array<string, ArbitraryInterface> */
