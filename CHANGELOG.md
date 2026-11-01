@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Mutation testing now counts uncovered code (`composer mutation` runs
+  `infection --with-uncovered`); template `PublicVisibility` / signature-default
+  ignore settings applied. No `src/` changes.
+
 ## 1.1.1 — 2026-07-25
 
 - Reject trailing newlines in flag-name validation: anchor `Flag::NAME_PATTERN`
