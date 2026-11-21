@@ -22,7 +22,7 @@ rollout через SHA-256 hash. Работает с Yii3 config-plugin или �
 
 ## Требования
 
-- PHP 8.3+
+- PHP 8.3 – 8.6
 
 ## Установка
 

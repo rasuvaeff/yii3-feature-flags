@@ -5,6 +5,9 @@
 - Mutation testing now counts uncovered code (`composer mutation` runs
   `infection --with-uncovered`); template `PublicVisibility` / signature-default
   ignore settings applied. No `src/` changes.
+- **Changed:** PHP 8.6 is supported: the `php` constraint is widened to
+  `8.3 - 8.6` (#27). CI runs PHP 8.6 as a regular matrix entry; the
+  backward-compatibility job runs on PHP 8.5.
 
 ## 1.1.1 — 2026-07-25
 
