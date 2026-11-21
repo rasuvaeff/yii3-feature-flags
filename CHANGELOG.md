@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.2 — 2026-11-21
 
 - Mutation testing now counts uncovered code (`composer mutation` runs
   `infection --with-uncovered`); template `PublicVisibility` / signature-default
