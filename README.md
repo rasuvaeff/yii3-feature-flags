@@ -22,7 +22,7 @@ SHA-256 hash. Works with Yii3 config-plugin or standalone.
 
 ## Requirements
 
-- PHP 8.3+
+- PHP 8.3 – 8.6
 
 ## Installation
 
