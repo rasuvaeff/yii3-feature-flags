@@ -30,7 +30,8 @@ packages. Namespace `Rasuvaeff\Yii3FeatureFlags\`.
 3. **Rollout is deterministic**: `sha256(salt . ':' . subjectId)`, first 8 hex
    chars → bucket % 100. Same salt + subject always gives the same answer;
    changing the `salt` is the only way to re-randomize. User ID wins over tenant
-   ID as the rollout subject.
+   ID as the rollout subject; with neither, only `rollout: 100` is on. A flag with
+   `environments` is off when the context carries no environment.
 
 4. **Unknown flags do not throw by default**: non-strict mode returns `false`
    (reason `Unknown`); `new FeatureFlags(provider: $p, strictMode: true)` throws

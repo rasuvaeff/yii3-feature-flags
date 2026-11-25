@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 — 2026-11-25
+
+- **Behavior change (fail-closed):** a flag restricted to `environments` is now
+  `EnvironmentExcluded` when the context carries no environment; before, the
+  restriction was skipped and the flag was enabled. Set the environment in every
+  `FlagContext`, workers and cron jobs included (#30).
+- **Behavior change (fail-closed):** without a user or tenant ID a flag with
+  `rollout` below 100 is now `RolloutExcluded`; before, it was enabled whatever the
+  percentage, `0` included. `rollout: 100` stays enabled (#30).
+
 ## 1.1.2 — 2026-11-21
 
 - Mutation testing now counts uncovered code (`composer mutation` runs
