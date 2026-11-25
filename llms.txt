@@ -10,6 +10,7 @@ composer require rasuvaeff/yii3-feature-flags
 
 - Stateless core. Storage backends are separate packages.
 - Deterministic rollout: `sha256(salt . ':' . subjectId)`, first 8 hex chars → bucket % 100.
+- Fail-closed: a flag with `environments` is `EnvironmentExcluded` when the context has no environment; without user/tenant ID a flag is on only at `rollout: 100` (else `RolloutExcluded`).
 - Kill switch overrides all rules, including forced values.
 - Forced values are context-scoped, apply only to existing flags, and do not override a kill switch.
 - Unknown flag returns `false` in non-strict mode, throws `UnknownFlagException` in strict mode.

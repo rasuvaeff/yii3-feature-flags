@@ -74,7 +74,7 @@ return [
 | `salt` | `string` | flag name | Hash salt for deterministic rollout |
 | `rollout` | `int` | `100` | Percentage of subjects to include (0..100) |
 | `killSwitch` | `bool` | `false` | Immediately disable the flag, overrides all rules |
-| `environments` | `list<string>` | `[]` | Restrict to specific environments (empty = all) |
+| `environments` | `list<string>` | `[]` | Restrict to specific environments (empty = all); a context without an environment is excluded |
 
 ### FlagContext
 
@@ -141,8 +141,8 @@ overlapping booleans:
 | `Enabled` | `true` | Flag on, no targeting/rollout exclusion |
 | `Disabled` | `false` | `enabled: false` on the flag |
 | `KillSwitch` | `false` | `killSwitch: true` overrides everything |
-| `RolloutExcluded` | `false` | Subject outside the rollout bucket |
-| `EnvironmentExcluded` | `false` | Context environment not in the flag's allowlist |
+| `RolloutExcluded` | `false` | Subject outside the rollout bucket, or no subject and `rollout` below 100 |
+| `EnvironmentExcluded` | `false` | Context environment not in the flag's allowlist, or not set |
 | `Forced` | caller-set | `FlagContext::withForcedFlag()` overrode the result |
 | `Unknown` | `false` | Flag not registered (non-strict mode) |
 ```
@@ -158,6 +158,7 @@ Deterministic assignment using `sha256(salt . ':' . subjectId)`:
 
 - Same `salt` + `subjectId` always produces the same result.
 - Changing `salt` resets assignment (intentional re-randomization).
+- Without a user or tenant ID the flag is on only at `rollout: 100`.
 - Changing weights shifts boundaries; some subjects may change variant.
 
 ## Public API

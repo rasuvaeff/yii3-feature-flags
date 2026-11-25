@@ -9,6 +9,8 @@ namespace Rasuvaeff\Yii3FeatureFlags;
  */
 final readonly class FlagEvaluator
 {
+    private const int FULL_ROLLOUT = 100;
+
     public function __construct(
         private PercentageRollout $rollout = new PercentageRollout(),
     ) {}
@@ -23,14 +25,16 @@ final readonly class FlagEvaluator
             return EvaluationResult::disabled(flagName: $flag->name);
         }
 
-        if ($flag->environments !== [] && $context->getEnvironment() !== null && !in_array(needle: $context->getEnvironment(), haystack: $flag->environments, strict: true)) {
+        if ($flag->environments !== [] && !in_array(needle: $context->getEnvironment(), haystack: $flag->environments, strict: true)) {
             return EvaluationResult::environmentExcluded(flagName: $flag->name);
         }
 
         $subjectId = $context->getUserId() ?? $context->getTenantId();
 
         if ($subjectId === null) {
-            return EvaluationResult::enabled(flagName: $flag->name);
+            return $flag->rollout === self::FULL_ROLLOUT
+                ? EvaluationResult::enabled(flagName: $flag->name)
+                : EvaluationResult::rolloutExcluded(flagName: $flag->name);
         }
 
         $enabled = $this->rollout->isEnabled(

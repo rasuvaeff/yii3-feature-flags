@@ -74,8 +74,8 @@ make release-check
   The `EvaluationReason` enum is the single source of truth for "why".
 - Unknown flag returns `false` (reason `Unknown`) in non-strict mode, throws in strict mode.
 - User ID takes priority over tenant ID for rollout subject.
-- Environment check only applies when flag has environments configured AND
-  context provides an environment.
+- Fail-closed: a flag with environments excludes a context without one, and
+  without a user or tenant ID only `rollout: 100` is enabled.
 - `WritableFlagProvider extends FlagProvider`. Cache decorators that implement it
   invalidate themselves after a successful `save()` / `remove()`.
 - Core DI does not bind `MetricsRecorder`; `FeatureFlags` defaults to

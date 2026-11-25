@@ -10,6 +10,7 @@ use Rasuvaeff\Yii3FeatureFlags\FlagContext;
 use Rasuvaeff\Yii3FeatureFlags\FlagEvaluator;
 use Testo\Assert;
 use Testo\Codecov\Covers;
+use Testo\Data\DataProvider;
 use Testo\Lifecycle\BeforeTest;
 use Testo\Test;
 
@@ -95,7 +96,7 @@ final class FlagEvaluatorTest
         Assert::same($result->getReason(), EvaluationReason::Enabled);
     }
 
-    public function environmentRestrictionDoesNotApplyWithoutContextEnvironment(): void
+    public function environmentRestrictionExcludesAContextWithoutEnvironment(): void
     {
         $flag = new Flag(
             name: 'my-flag',
@@ -107,8 +108,8 @@ final class FlagEvaluatorTest
 
         $result = $this->evaluator->evaluate(flag: $flag, context: $context);
 
-        Assert::true($result->isEnabled());
-        Assert::notSame($result->getReason(), EvaluationReason::EnvironmentExcluded);
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::EnvironmentExcluded);
     }
 
     public function noEnvironmentRestrictionPasses(): void
@@ -178,29 +179,21 @@ final class FlagEvaluatorTest
         Assert::notSame($resultUserOnly->isEnabled(), $resultTenantOnly->isEnabled());
     }
 
-    public function enabledReasonWhenSubjectIdIsNull(): void
+    #[DataProvider('partialRolloutProvider')]
+    public function partialRolloutExcludesAContextWithoutSubject(int $rollout): void
     {
-        $flag = new Flag(name: 'my-flag', enabled: true, rollout: 0);
-        $context = FlagContext::empty();
+        $flag = new Flag(name: 'my-flag', enabled: true, rollout: $rollout);
 
-        $result = $this->evaluator->evaluate(flag: $flag, context: $context);
+        $result = $this->evaluator->evaluate(flag: $flag, context: FlagContext::empty());
 
-        Assert::true($result->isEnabled());
-        Assert::same($result->getReason(), EvaluationReason::Enabled);
+        Assert::false($result->isEnabled());
+        Assert::same($result->getReason(), EvaluationReason::RolloutExcluded);
     }
 
-    public function enabledReasonWithEnvironmentButNoContextEnvironment(): void
+    public static function partialRolloutProvider(): iterable
     {
-        $flag = new Flag(
-            name: 'my-flag',
-            enabled: true,
-            rollout: 100,
-            environments: ['production'],
-        );
-        $context = FlagContext::empty();
-
-        $result = $this->evaluator->evaluate(flag: $flag, context: $context);
-
-        Assert::same($result->getReason(), EvaluationReason::Enabled);
+        yield 'none' => [0];
+        yield 'half' => [50];
+        yield 'all but one percent' => [99];
     }
 }

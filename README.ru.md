@@ -74,7 +74,7 @@ return [
 | `salt` | `string` | имя флага | Hash-salt для детерминированного rollout |
 | `rollout` | `int` | `100` | Процент субъектов (0..100) |
 | `killSwitch` | `bool` | `false` | Немедленно выключает флаг, перекрывает все правила |
-| `environments` | `list<string>` | `[]` | Ограничение окружениями (пусто = все) |
+| `environments` | `list<string>` | `[]` | Ограничение окружениями (пусто = все); контекст без окружения исключается |
 
 ### FlagContext
 
@@ -142,8 +142,8 @@ $result->getFlagName();    // string
 | `Enabled` | `true` | Флаг включён, без исключений таргетинга/rollout |
 | `Disabled` | `false` | `enabled: false` на флаге |
 | `KillSwitch` | `false` | `killSwitch: true` перекрывает всё |
-| `RolloutExcluded` | `false` | Субъект вне rollout-бакета |
-| `EnvironmentExcluded` | `false` | Окружение контекста не в allow-list флага |
+| `RolloutExcluded` | `false` | Субъект вне rollout-бакета либо субъекта нет, а `rollout` меньше 100 |
+| `EnvironmentExcluded` | `false` | Окружение контекста не в allow-list флага либо не задано |
 | `Forced` | задаётся вызывающим | `FlagContext::withForcedFlag()` переопределило результат |
 | `Unknown` | `false` | Флаг не зарегистрирован (нестрогий режим) |
 
@@ -158,6 +158,7 @@ $result->getFlagName();    // string
 
 - Те же `salt` + `subjectId` всегда дают один и тот же результат.
 - Изменение `salt` сбрасывает распределение (намеренная ре-рандомизация).
+- Без ID пользователя и тенанта флаг включён только при `rollout: 100`.
 - Изменение весов сдвигает границы; некоторые субъекты могут сменить вариант.
 
 ## Публичный API
