@@ -17,11 +17,12 @@ packages. Namespace `Rasuvaeff\Yii3FeatureFlags\`.
 
 ## Safety rules — verify these on every change
 
-1. **Core DI binds only `FeatureFlags`.** Never bind `FlagProvider` or
-   `MetricsRecorder` in app config when a storage backend (`yii3-feature-flags-db`)
-   is installed — the backend already binds it, and a second binding triggers a
-   `yiisoft/config` `Duplicate key` error. Bind `FlagProvider` yourself only in a
-   config-only setup with no backend.
+1. **Core DI binds only `FeatureFlags`.** Never bind `FlagProvider` in app
+   config when a storage backend (`yii3-feature-flags-db`) is installed — the
+   backend already binds it, and a second binding triggers a `yiisoft/config`
+   `Duplicate key` error. Bind `FlagProvider` yourself only in a config-only setup
+   with no backend. `MetricsRecorder` is bound by no package: bind it in the app
+   to get metrics, otherwise `FeatureFlags` uses `NullMetricsRecorder`.
 
 2. **Kill switch overrides everything**, including context-forced values. A flag
    with `killSwitch: true` is off no matter what — never "fix" a stuck flag by
@@ -38,7 +39,7 @@ packages. Namespace `Rasuvaeff\Yii3FeatureFlags\`.
    `UnknownFlagException`. Don't rely on an exception to catch typos unless
    strict mode is on.
 
-5. **Validation split**: flag names must match `/^[a-z][a-z0-9._-]*$/`
+5. **Validation split**: flag names must match `/^[a-z][a-z0-9._-]*\z/`
    (`InvalidFlagNameException`); rollout outside 0..100 throws plain
    `\InvalidArgumentException`. `EvaluationResult` is built only via its static
    factories — the constructor is private.

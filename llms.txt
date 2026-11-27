@@ -192,7 +192,7 @@ interface MetricsRecorder {
 - Constructor default of `FeatureFlags` is `new NullMetricsRecorder()`.
 - Called exactly once per `evaluate()` (once per `isEnabled()`/`isDisabled()` too).
 - NOT called when strict mode throws `UnknownFlagException`.
-- Core `config/di.php` does NOT bind `MetricsRecorder`. Adapter packages bind it in their own config.
+- No package binds `MetricsRecorder` (neither the core nor `-db`). Bind it in the application to record metrics.
 
 ```php
 $recorder = new class implements MetricsRecorder {
