@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 — 2026-11-27
+
+- Docs: the agent skill shows the flag-name pattern with `\z`, and the skill and `llms.txt` no longer say a backend binds `MetricsRecorder`: no package binds it.
+
 ## 1.2.0 — 2026-11-25
 
 - **Behavior change (fail-closed):** a flag restricted to `environments` is now
